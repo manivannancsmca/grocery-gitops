@@ -28,16 +28,28 @@ changes the cluster.
 bootstrap/
   kind/cluster.yaml          Kind cluster: 1 control plane + 1 worker, ports 80/443 on 127.0.0.1
   argocd/                    Argo CD Helm values (common + per environment) and Helm chart sources
-  scripts/                   bootstrap-kind.ps1, backup-sealing-key.ps1, destroy-kind.ps1
-projects/<env>/              AppProjects: who may deploy what, where, from which repository
+  scripts/                   bootstrap-kind.ps1, seal-kind-secrets.ps1, backup-sealing-key.ps1, destroy-kind.ps1
+projects/<env>/              AppProjects: who may deploy what, where, from which repository (kind, staging, prod)
 roots/<env>.yaml             the ROOT Application of an environment (App of Apps), applied once
 app-of-apps/<env>/           the child Applications the root creates, ordered by sync waves
-platform/                    cluster add-ons: namespaces, storage, Sealed Secrets, metrics-server, Envoy Gateway
-infrastructure/              stateful services and their setup Jobs (MySQL, Kafka, ...)        [step 2]
-services/                    the 17 Spring Boot services: base + overlays per environment     [step 3]
-frontend/                    grocery-web-ui: base + overlays per environment                  [step 3]
-docs/                        workflow, troubleshooting, rollback                               [step 5]
+platform/                    cluster add-ons: namespaces, storage, Sealed Secrets / External Secrets, metrics-server,
+                             Envoy Gateway + the public Gateway (Kind NodePort, EKS NLB)
+infrastructure/<name>/       Kind only: MySQL, Kafka, Redis, Elasticsearch, Mailpit, Schema Registry, Kafka Connect,
+                             network policies, platform-init (setup Jobs). EKS uses AWS managed services instead.
+services/_components/        the spring-boot Kustomize Component shared by all 17 services
+services/_shared/            ConfigMap grocery-runtime (per environment) + network policies of namespace grocery
+services/<svc>/              base + overlays/kind|staging|prod (CI writes the image tag + digest into kind/staging)
+frontend/grocery-web-ui/     nginx + React build, HTTPRoute; base + overlays/kind|staging|prod
+docs/                        workflow.md (CI/CD step by step), rollback.md, troubleshooting.md, eks.md
+.github/workflows/           validate.yml (every PR), promote.yml (staging -> prod pull request)
 ```
+
+| Read this | For |
+|---|---|
+| [docs/workflow.md](docs/workflow.md) | the complete CI/CD + GitOps flow, step by step, and how to validate it |
+| [docs/rollback.md](docs/rollback.md) | rolling back (Git revert, Argo CD rollback), and what a rollback does not undo |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | symptoms → causes → fixes for Argo CD, workloads, Kind and CI |
+| [docs/eks.md](docs/eks.md) | moving staging and production to AWS EKS |
 
 ## App of Apps on Kind
 
@@ -52,6 +64,22 @@ the Applications of the previous one are **Healthy**.
 | -30 | `metrics-server` | grocery-platform | ✓ | ✓ | ✓ |
 | -20 | `gateway`: public Gateway and Argo CD route | grocery-platform | ✓ | ✓ | ✓ |
 | -10 | `argocd`: Argo CD manages itself | grocery-platform | ✓ | ✓ | ✗ |
+| -5 | `network-policies` (grocery-infra) | grocery-infra-kind | ✓ | ✓ | ✗ |
+| 0 | `mysql`, `kafka`, `redis`, `elasticsearch`, `mailpit` | grocery-infra-kind | ✓ | ✓ | ✗ |
+| 2 / 3 | `schema-registry`, `kafka-connect` | grocery-infra-kind | ✓ | ✓ | ✗ |
+| 5 | `platform-init`: setup Jobs as Sync hooks (databases + users, topics, schemas, connectors) | grocery-infra-kind | ✓ | ✓ | ✗ |
+| 15 | `grocery-shared`: runtime ConfigMap + network policies (grocery) | grocery-apps-kind | ✓ | ✓ | ✓ |
+| 20 | the 17 services | grocery-apps-kind | ✓ | ✓ | ✓ |
+| 30 | `grocery-web-ui` | grocery-apps-kind | ✓ | ✓ | ✓ |
+
+The stateful infrastructure has every safeguard at once:
+- no automatic pruning;
+- no cascade-delete finalizer;
+- `Delete=false,Prune=false` on the StatefulSets;
+- `persistentVolumeClaimRetentionPolicy: Retain`;
+- volumes on the `grocery-retain` StorageClass (`reclaimPolicy: Retain`).
+
+Deleting data is always a deliberate, manual step.
 
 **Pruning is a deliberate choice per Application, not a default.** It is off for anything that holds state or
 defines types: namespaces, CRDs, the sealing key, Argo CD itself and every database. Where it is off, the
@@ -93,11 +121,17 @@ ssh-keygen -t ed25519 -N '""' -C argocd-kind -f $HOME\.grocery-gitops\argocd-dep
 
 # create the cluster and hand it to Argo CD
 .\bootstrap\scripts\bootstrap-kind.ps1
+
+# once per new cluster (or new key): random passwords for MySQL users, services and the bootstrap admin,
+# committed only as SealedSecrets (plain values stay in %USERPROFILE%\.grocery-gitops\kind-secrets.json)
+.\bootstrap\scripts\seal-kind-secrets.ps1
 ```
 
-Then open <http://argocd.localtest.me>. The passwords for `developer` and `release-manager` are in
-`%USERPROFILE%\.grocery-gitops\argocd-accounts.txt`. `argocd admin initial-password -n argocd` prints the admin
-password.
+| URL | What |
+|---|---|
+| <http://argocd.localtest.me> | Argo CD. `developer` / `release-manager` passwords are in `%USERPROFILE%\.grocery-gitops\argocd-accounts.txt`; `argocd admin initial-password -n argocd` prints the admin password |
+| <http://grocery.localtest.me> | the FreshCart web app. Sign in with a `dev.*@grocery.local` account from the sign-in page, or as `admin@grocery.local` (password in `kind-secrets.json`) |
+| <http://mail.localtest.me> | Mailpit: every e-mail the platform sends |
 
 Check what is running:
 
@@ -119,5 +153,8 @@ Delete the cluster with `.\bootstrap\scripts\destroy-kind.ps1`. It backs up the 
 | Envoy Gateway | 1.10.0 (with the Gateway API CRDs) |
 | Sealed Secrets | chart 2.22.0 (controller 0.41.2) |
 | metrics-server | chart 3.14.0 |
+| External Secrets Operator (EKS) | chart 2.15.0 |
+| MySQL / Kafka / Redis / Elasticsearch | 8.4.13 / 4.3.2 / 8.8.4 / 9.4.6 (same as local Compose) |
+| Schema Registry / Debezium Connect / Mailpit | 8.2.4 / 3.7.1.Final / v1.32.0 |
 
 Upgrades are pull requests that change these versions; Argo CD then rolls them out.
