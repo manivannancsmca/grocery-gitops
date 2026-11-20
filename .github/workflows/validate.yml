@@ -1,0 +1,74 @@
+# Validates every change to the desired state before Argo CD can see it (pull requests) and after it lands (main):
+#   1. every Kustomize directory builds;
+#   2. every rendered object is valid against the Kubernetes API schemas and the CRD schemas (kubeconform);
+#   3. no plain Kubernetes Secret with data is committed (only SealedSecrets / ExternalSecrets / the credential-free
+#      Helm repository entries of bootstrap/argocd);
+#   4. production never points at an unbuilt image ("unset") once it has been promoted.
+# Deliberately no cluster access: this workflow cannot deploy anything.
+name: Validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      KUSTOMIZE_VERSION: 5.8.3
+      KUBECONFORM_VERSION: 0.7.0
+      KUBERNETES_VERSION: 1.36.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install kustomize and kubeconform
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/bin"
+          curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar -xz -C "$HOME/bin"
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar -xz -C "$HOME/bin"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Build and validate every Kustomize directory
+        run: |
+          set -uo pipefail
+          failed=0
+          dirs=$(find . -name kustomization.yaml -not -path './.git/*' -not -path '*/_components/*' -not -path '*/base/*' -printf '%h\n' | sort)
+          for dir in $dirs; do
+            if ! out=$(kustomize build "$dir" 2>&1); then
+              echo "::error file=$dir/kustomization.yaml::kustomize build failed"; echo "$out"; failed=1; continue
+            fi
+            echo "$out" > /tmp/rendered.yaml
+            if ! kubeconform -strict -summary -kubernetes-version "$KUBERNETES_VERSION" \
+                 -schema-location default \
+                 -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+                 -ignore-missing-schemas /tmp/rendered.yaml; then
+              echo "::error file=$dir/kustomization.yaml::schema validation failed"; failed=1
+            fi
+          done
+          echo "Checked $(echo "$dirs" | wc -l) directories."
+          exit $failed
+      - name: No plain Secrets in Git
+        run: |
+          set -euo pipefail
+          # Allowed: bootstrap/argocd/repositories.yaml (public Helm repositories, no credentials).
+          hits=$(grep -rlE '^kind:\s*Secret\s*$' --include='*.yaml' . | grep -v '^./bootstrap/argocd/repositories.yaml$' || true)
+          if [[ -n "$hits" ]]; then
+            echo "::error::Plain Secret manifests found (use a SealedSecret or an ExternalSecret):"; echo "$hits"; exit 1
+          fi
+          echo "Only sealed / external secrets are committed."
+      - name: Production images are promoted builds
+        run: |
+          set -euo pipefail
+          # Reported, not failed: a prod overlay stays "unset" until its first promotion.
+          pending=$(grep -lE 'newTag: unset' services/*/overlays/prod/kustomization.yaml frontend/*/overlays/prod/kustomization.yaml || true)
+          if [[ -n "$pending" ]]; then
+            echo "::notice::Not promoted to production yet: $(echo "$pending" | xargs -n1 dirname | xargs -n1 dirname | xargs -n1 dirname | xargs -n1 basename | tr '\n' ' ')"
+          fi

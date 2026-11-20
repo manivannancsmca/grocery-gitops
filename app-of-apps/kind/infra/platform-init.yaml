@@ -1,0 +1,32 @@
+# Setup Jobs: databases/users, topics, Avro schemas, Debezium connectors.
+# Stateful infrastructure: automatic sync and self-heal, but NO automatic pruning and NO cascade-delete finalizer -
+# removing this Application (or a resource from Git) never deletes data. StatefulSets are also annotated
+# Delete=false,Prune=false and their volumes use the Retain storage class.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-init
+  namespace: argocd
+  labels:
+    grocery.io/group: infrastructure
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: grocery-infra-kind
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: infrastructure/platform-init/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grocery-infra
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

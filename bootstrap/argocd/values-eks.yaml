@@ -1,0 +1,53 @@
+# Argo CD on an EKS cluster (layered on values-common.yaml). One Argo CD per cluster (staging, prod).
+# - SSO through Dex (GitHub OAuth app); the built-in admin is disabled once SSO works.
+# - High availability: 2 replicas of server and repo-server, Redis HA.
+# - Notifications to Slack / e-mail on sync failures and degraded health.
+# Values marked REPLACE are filled in when the cluster exists (docs/eks.md).
+global:
+  domain: argocd.REPLACE-domain
+
+configs:
+  cm:
+    url: https://argocd.REPLACE-domain
+    admin.enabled: false
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: REPLACE-github-oauth-client-id
+            clientSecret: $dex.github.clientSecret
+            orgs:
+              - name: REPLACE-github-org
+                teams: [grocery-developers, grocery-release-managers]
+  rbac:
+    # GitHub teams -> the roles of values-common.yaml.
+    policy.sso-groups.csv: |
+      g, REPLACE-github-org:grocery-developers, role:developer
+      g, REPLACE-github-org:grocery-release-managers, role:release-manager
+
+dex:
+  enabled: true
+notifications:
+  enabled: true
+
+redis-ha:
+  enabled: true
+controller:
+  replicas: 1
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { memory: 2Gi }
+server:
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 512Mi }
+repoServer:
+  replicas: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+applicationSet:
+  replicas: 2

@@ -1,0 +1,8 @@
+# Shared by the staging and prod gateway overlays: Envoy behind an internet-facing AWS Network Load Balancer
+# (AWS Load Balancer Controller). TLS terminates at the NLB with an ACM certificate (annotation below), so the
+# Gateway keeps one plain-HTTP listener behind it, exactly like Kind.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gatewayclass.yaml
+  - argocd-route.yaml

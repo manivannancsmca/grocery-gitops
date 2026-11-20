@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: argocd
+  labels:
+    grocery.io/group: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  project: grocery-platform
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: platform/gateway/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

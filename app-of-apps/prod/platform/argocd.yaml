@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    grocery.io/group: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: grocery-platform
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.18.2
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/bootstrap/argocd/values-common.yaml
+          - $values/bootstrap/argocd/values-eks.yaml
+    - repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+      targetRevision: main
+      ref: values
+    - repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+      targetRevision: main
+      path: bootstrap/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

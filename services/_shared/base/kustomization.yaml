@@ -1,0 +1,13 @@
+# Shared by every service of an environment: network policies of the namespace, plus (overlay) the ConfigMap
+# "grocery-runtime" every service reads with envFrom.
+#
+# Note: a changed ConfigMap does not restart running pods. After changing grocery-runtime, restart the services
+# (Argo CD UI: the Deployment's "Restart" action, or `kubectl rollout restart deployment -n grocery`).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: grocery
+    includeSelectors: false
+resources:
+  - network-policies.yaml

@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../../base
+  - hpa.yaml
+  - pdb.yaml
+patches:
+  - target: { kind: HTTPRoute, name: grocery-web-ui }
+    patch: |
+      - op: replace
+        path: /spec/hostnames
+        value: [staging.REPLACE-domain]
+  - target: { kind: Deployment, name: grocery-web-ui }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+images:
+  - name: grocery/grocery-web-ui
+    newName: ghcr.io/manivannancsmca/grocery-web-ui
+    newTag: unset

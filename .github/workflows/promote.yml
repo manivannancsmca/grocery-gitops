@@ -1,0 +1,78 @@
+# Promotes what runs in staging to production through a pull request (never a direct push):
+#   Actions -> Promote to production -> Run workflow (all, or one component).
+# The workflow copies the image tag + digest of every selected component from overlays/staging to overlays/prod on a
+# new branch and opens a pull request. A release manager reviews and merges it; Argo CD on the production cluster
+# then syncs inside the production sync window (projects/prod/apps.yaml).
+#
+# Repository setting required once: Settings -> Actions -> General -> "Allow GitHub Actions to create and approve
+# pull requests".
+name: Promote to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: 'One component (e.g. order-service, grocery-web-ui) or "all"'
+        required: true
+        default: all
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote-prod
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Copy staging image references to prod
+        id: copy
+        env:
+          COMPONENT: ${{ inputs.component }}
+        run: |
+          set -euo pipefail
+          changed=()
+          for staging in services/*/overlays/staging/kustomization.yaml frontend/*/overlays/staging/kustomization.yaml; do
+            component="$(basename "$(dirname "$(dirname "$(dirname "$staging")")")")"
+            [[ "$COMPONENT" != "all" && "$COMPONENT" != "$component" ]] && continue
+            prod="${staging/\/staging\//\/prod\/}"
+            [[ -f "$prod" ]] || continue
+            images="$(yq -o=json '.images // []' "$staging")"
+            if [[ "$(yq '.images[0].newTag' "$staging")" == "unset" ]]; then
+              echo "skip $component: nothing deployed to staging yet"; continue
+            fi
+            IMAGES="$images" yq -i '.images = env(IMAGES)' "$prod"
+            if ! git diff --quiet -- "$prod"; then changed+=("$component"); fi
+          done
+          if [[ ${#changed[@]} -eq 0 ]]; then
+            echo "Production already runs what staging runs."; echo "count=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          printf '%s\n' "${changed[@]}" > /tmp/changed.txt
+          echo "count=${#changed[@]}" >> "$GITHUB_OUTPUT"
+      - name: Open the pull request
+        if: steps.copy.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch="promote/prod-$(date -u +%Y%m%d-%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A
+          git commit -q -m "promote(prod): $(paste -sd, /tmp/changed.txt)" -m "Copied from the staging overlays by the promote workflow."
+          git push -q origin "$branch"
+          {
+            echo "Promotes these components from **staging** to **production** (image tag + digest copied):"
+            echo
+            sed 's/^/- /' /tmp/changed.txt
+            echo
+            echo "Merging rolls them out on the production cluster inside its sync window."
+            echo "Roll back by reverting the merge commit (see docs/rollback.md)."
+          } > /tmp/body.md
+          gh pr create --base main --head "$branch" --title "Promote to production: $(paste -sd, /tmp/changed.txt)" --body-file /tmp/body.md

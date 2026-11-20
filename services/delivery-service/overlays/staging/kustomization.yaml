@@ -1,0 +1,40 @@
+# delivery-service on the staging EKS cluster: 2+ replicas (HPA), PodDisruptionBudget, spread over zones, secrets from
+# AWS Secrets Manager (External Secrets Operator), the "aws" Spring profile (services/_shared/overlays/staging).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../../base
+  - hpa.yaml
+  - pdb.yaml
+  - external-secrets.yaml
+images:
+  - name: grocery/delivery-service
+    newName: ghcr.io/manivannancsmca/grocery-delivery-service
+    newTag: unset
+patches:
+  - target: { kind: Deployment, name: delivery-service }
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: delivery-service
+      spec:
+        replicas: 2
+        template:
+          spec:
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: topology.kubernetes.io/zone
+                whenUnsatisfiable: ScheduleAnyway
+                labelSelector: {}
+                matchLabelKeys: [app.kubernetes.io/name, pod-template-hash]
+            containers:
+              - name: app
+                resources:
+                  requests: { cpu: 100m, memory: 512Mi }
+                  limits: { memory: 768Mi }
+                envFrom:
+                  - configMapRef: { name: grocery-runtime }
+                  - secretRef: { name: delivery-service-db }
+                  - secretRef: { name: delivery-service-kafka }

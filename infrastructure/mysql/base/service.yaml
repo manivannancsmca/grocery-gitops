@@ -1,0 +1,23 @@
+# mysql.grocery-infra.svc.cluster.local:3306 for the services (DB_HOST) and plain "mysql" inside grocery-infra
+# (the Debezium connector configs use database.hostname=mysql).
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app.kubernetes.io/name: mysql
+  ports:
+    - { name: mysql, port: 3306, targetPort: mysql }
+---
+# Stable per-pod DNS for the StatefulSet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-headless
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: mysql
+  ports:
+    - { name: mysql, port: 3306, targetPort: mysql }

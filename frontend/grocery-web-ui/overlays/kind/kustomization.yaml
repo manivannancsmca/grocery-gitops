@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../../base
+patches:
+  - target: { kind: HTTPRoute, name: grocery-web-ui }
+    patch: |
+      - op: replace
+        path: /spec/hostnames
+        value: [grocery.localtest.me]
+# Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful frontend build.
+images:
+  - name: grocery/grocery-web-ui
+    newName: ghcr.io/manivannancsmca/grocery-web-ui
+    newTag: unset

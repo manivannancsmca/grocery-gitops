@@ -1,0 +1,42 @@
+# grocery-apps-prod: services + frontend on the prod EKS cluster (namespace grocery only, namespaced kinds only).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: grocery-apps-prod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Microservices and frontend on the prod cluster (namespace grocery)
+  sourceRepos:
+    - git@github.com:manivannancsmca/grocery-gitops.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: grocery }
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - { group: "", kind: ConfigMap }
+    - { group: "", kind: Service }
+    - { group: "", kind: ServiceAccount }
+    - { group: apps, kind: Deployment }
+    - { group: batch, kind: Job }
+    - { group: autoscaling, kind: HorizontalPodAutoscaler }
+    - { group: policy, kind: PodDisruptionBudget }
+    - { group: networking.k8s.io, kind: NetworkPolicy }
+    - { group: gateway.networking.k8s.io, kind: HTTPRoute }
+    - { group: external-secrets.io, kind: ExternalSecret }
+  orphanedResources:
+    warn: true
+    ignore:
+      - kind: Secret
+      - { kind: ConfigMap, name: kube-root-ca.crt }
+  # Production changes roll out only Monday-Thursday 06:00-14:00 UTC (automated syncs wait for the window).
+  # manualSync: a release manager can still sync by hand outside the window (e.g. an emergency rollback).
+  syncWindows:
+    - kind: allow
+      schedule: "0 6 * * 1-4"
+      duration: 8h
+      applications: ["*"]
+      manualSync: true
+      timeZone: UTC

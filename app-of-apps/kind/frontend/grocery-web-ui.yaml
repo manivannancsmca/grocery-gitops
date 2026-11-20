@@ -1,0 +1,31 @@
+# The web app (nginx + React build). Wave 30: after every service is healthy.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grocery-web-ui
+  namespace: argocd
+  labels:
+    grocery.io/group: frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: grocery-apps-kind
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: frontend/grocery-web-ui/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grocery
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

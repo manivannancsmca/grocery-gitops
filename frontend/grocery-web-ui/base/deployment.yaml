@@ -1,0 +1,72 @@
+# grocery-web-ui: the React app (Vite build) served by unprivileged nginx (grocery-ai-app
+# frontend/grocery-web-ui/Dockerfile.prod). nginx also proxies /api/** to the api-gateway (Server-Sent Events
+# included), so the browser talks to one origin and the gateway is never exposed directly.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grocery-web-ui
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grocery-web-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grocery-web-ui
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101            # nginx-unprivileged
+        runAsGroup: 101
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: web
+          image: grocery/grocery-web-ui
+          env:
+            # Fully qualified: nginx resolves the upstream at request time and its resolver ignores search domains.
+            - { name: API_UPSTREAM, value: "http://api-gateway.grocery.svc.cluster.local:8080" }
+          ports:
+            - { name: http, containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 20
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          # Writable places nginx needs with a read-only root filesystem (rendered config, temp files, pid).
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: confd, mountPath: /etc/nginx/conf.d }
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+        - name: confd
+          emptyDir: { sizeLimit: 1Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grocery-web-ui
+spec:
+  selector:
+    app.kubernetes.io/name: grocery-web-ui
+  ports:
+    - { name: http, port: 80, targetPort: http }

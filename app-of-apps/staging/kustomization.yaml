@@ -1,0 +1,33 @@
+# Everything the root Application "grocery-staging" (roots/staging.yaml) creates on the staging EKS cluster.
+# Stateful services are AWS managed services (RDS, MSK, ElastiCache, search), provisioned by Terraform, not by
+# Argo CD. In-cluster pieces still to add for EKS (docs/eks.md): Schema Registry and the setup Jobs against MSK.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../projects/staging
+  - platform/cluster-base.yaml
+  - platform/external-secrets.yaml
+  - platform/secret-store.yaml
+  - platform/metrics-server.yaml
+  - platform/envoy-gateway.yaml
+  - platform/gateway.yaml
+  - platform/argocd.yaml
+  - services/grocery-shared.yaml
+  - services/api-gateway.yaml
+  - services/identity-service.yaml
+  - services/customer-service.yaml
+  - services/vendor-service.yaml
+  - services/restaurant-service.yaml
+  - services/catalog-command-service.yaml
+  - services/catalog-query-service.yaml
+  - services/inventory-service.yaml
+  - services/pricing-service.yaml
+  - services/cart-service.yaml
+  - services/order-service.yaml
+  - services/payment-service.yaml
+  - services/delivery-service.yaml
+  - services/notification-service.yaml
+  - services/review-service.yaml
+  - services/ai-orchestrator-service.yaml
+  - services/reporting-service.yaml
+  - frontend/grocery-web-ui.yaml

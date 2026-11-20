@@ -1,0 +1,86 @@
+# MySQL 8.4: one server hosts every service database (as in the local Compose setup); each service has its own
+# least-privilege user (infrastructure/platform-init creates them). EKS uses Amazon RDS instead.
+#
+# Deletion safeguards: Argo CD never prunes or deletes this StatefulSet (sync-options), the volume claim is kept when
+# the StatefulSet is deleted or scaled down (persistentVolumeClaimRetentionPolicy), and the volume is kept when the
+# claim is deleted (storage class grocery-retain, reclaimPolicy Retain).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+spec:
+  serviceName: mysql-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mysql
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 999                 # the image's mysql user owns the data directory
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: mysql
+          image: mysql:8.4.13
+          # Same settings as infrastructure/local/docker-compose.yml (flags, not a my.cnf file).
+          args:
+            - --server-id=1
+            - --gtid-mode=ON
+            - --enforce-gtid-consistency=ON
+            - --binlog-expire-logs-seconds=259200
+            - --innodb-buffer-pool-size=256M
+            - --innodb-log-buffer-size=16M
+            - --performance-schema=OFF
+            - --max-connections=300
+            - --table-open-cache=400
+            - --skip-name-resolve
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_0900_ai_ci
+            - --default-time-zone=+00:00
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: mysql-root, key: MYSQL_ROOT_PASSWORD }
+            - name: TZ
+              value: UTC
+          ports:
+            - { name: mysql, containerPort: 3306 }
+          # mysqladmin ping exits 0 whenever the server answers (even "access denied"), so no password is needed.
+          startupProbe:
+            exec: { command: ["mysqladmin", "ping", "-h", "127.0.0.1", "--silent"] }
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec: { command: ["mysqladmin", "ping", "-h", "127.0.0.1", "--silent"] }
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            tcpSocket: { port: mysql }
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 100m, memory: 512Mi }
+            limits: { memory: 768Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/mysql }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: grocery-retain
+        resources:
+          requests:
+            storage: 5Gi

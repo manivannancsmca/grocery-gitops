@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../../base
+  - db.sealed.yaml          # reporting-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
+# Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful build of reporting-service:
+# the tag names the commit, the digest pins the exact image that was tested and scanned.
+images:
+  - name: grocery/reporting-service
+    newName: ghcr.io/manivannancsmca/grocery-reporting-service
+    newTag: unset

@@ -1,0 +1,37 @@
+# Settings every service reads (envFrom) on the staging EKS cluster. The services run their "aws" Spring profile,
+# which reads ONLY environment variables and has no defaults for infrastructure endpoints (a missing one stops the
+# service at start-up). Values marked REPLACE come from the Terraform outputs of the staging environment
+# (RDS, MSK, ElastiCache, OpenSearch / Elastic Cloud); see docs/eks.md. Secrets (DB / Kafka credentials) come from
+# AWS Secrets Manager through the ExternalSecrets of each service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grocery-runtime
+data:
+  SPRING_PROFILES_ACTIVE: aws
+  GROCERY_ENV: staging
+  TZ: UTC
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+
+  DB_HOST: REPLACE-rds-endpoint.REGION.rds.amazonaws.com
+  DB_PORT: "3306"
+  DB_SSL_MODE: REQUIRED
+  KAFKA_BOOTSTRAP_SERVERS: REPLACE-msk-bootstrap-brokers-sasl-scram:9096
+  KAFKA_SECURITY_PROTOCOL: SASL_SSL
+  KAFKA_SASL_MECHANISM: SCRAM-SHA-512
+  REDIS_HOST: REPLACE-elasticache-primary-endpoint
+  ELASTICSEARCH_URIS: https://REPLACE-search-endpoint:443
+  GROCERY_EVENTS_AVRO_SCHEMA_REGISTRY_URL: http://schema-registry.grocery-infra.svc.cluster.local:8081
+  SCHEMA_REGISTRY_URL: http://schema-registry.grocery-infra.svc.cluster.local:8081
+  SPRING_MAIL_HOST: email-smtp.REGION.amazonaws.com   # Amazon SES SMTP endpoint
+  SPRING_MAIL_PORT: "587"
+
+  JWT_ISSUER: https://staging.REPLACE-domain
+  IDENTITY_JWKS_URI: http://identity-service:8101/.well-known/jwks.json
+  GATEWAY_ALLOWED_ORIGINS: https://staging.REPLACE-domain
+  APP_BASE_URL: https://staging.REPLACE-domain
+  APPROVAL_JWKS_URI: http://ai-orchestrator-service:8115/.well-known/approval-jwks.json
+  DEV_SEED_ENABLED: "false"
+  AI_PROVIDER: anthropic
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability.svc.cluster.local:4318
+  TRACING_SAMPLING_PROBABILITY: "0.1"

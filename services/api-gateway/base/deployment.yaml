@@ -1,0 +1,40 @@
+# api-gateway: Single entry point: routing to every service, JWT checks, CORS, rate limits (Redis).
+# Shared settings (security, probes, shutdown, default resources, envFrom grocery-runtime) come from the
+# spring-boot component; the image registry, tag and digest come from the environment overlay (set by CI).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-gateway
+    spec:
+      containers:
+        - name: app
+          image: grocery/api-gateway
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: management, containerPort: 9080 }
+          env:
+            - { name: IDENTITY_SERVICE_URL, value: "http://identity-service:8101" }
+            - { name: CUSTOMER_SERVICE_URL, value: "http://customer-service:8102" }
+            - { name: VENDOR_SERVICE_URL, value: "http://vendor-service:8103" }
+            - { name: RESTAURANT_SERVICE_URL, value: "http://restaurant-service:8104" }
+            - { name: CATALOG_COMMAND_SERVICE_URL, value: "http://catalog-command-service:8105" }
+            - { name: CATALOG_QUERY_SERVICE_URL, value: "http://catalog-query-service:8106" }
+            - { name: INVENTORY_SERVICE_URL, value: "http://inventory-service:8107" }
+            - { name: PRICING_SERVICE_URL, value: "http://pricing-service:8108" }
+            - { name: CART_SERVICE_URL, value: "http://cart-service:8109" }
+            - { name: ORDER_SERVICE_URL, value: "http://order-service:8110" }
+            - { name: PAYMENT_SERVICE_URL, value: "http://payment-service:8111" }
+            - { name: DELIVERY_SERVICE_URL, value: "http://delivery-service:8112" }
+            - { name: NOTIFICATION_SERVICE_URL, value: "http://notification-service:8113" }
+            - { name: REVIEW_SERVICE_URL, value: "http://review-service:8114" }
+            - { name: AI_ORCHESTRATOR_SERVICE_URL, value: "http://ai-orchestrator-service:8115" }
+            - { name: REPORTING_SERVICE_URL, value: "http://reporting-service:8116" }

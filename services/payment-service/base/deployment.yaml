@@ -1,0 +1,27 @@
+# payment-service: Razorpay payments and refunds (simulator without keys).
+# Shared settings (security, probes, shutdown, default resources, envFrom grocery-runtime) come from the
+# spring-boot component; the image registry, tag and digest come from the environment overlay (set by CI).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: payment-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: payment-service
+    spec:
+      containers:
+        - name: app
+          image: grocery/payment-service
+          ports:
+            - { name: http, containerPort: 8111 }
+          env:
+            - { name: DB_USERNAME, value: payment_user }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: payment-service-db, key: DB_PASSWORD }

@@ -1,0 +1,40 @@
+# customer-service on the prod EKS cluster: 3+ replicas (HPA), PodDisruptionBudget, spread over zones, secrets from
+# AWS Secrets Manager (External Secrets Operator), the "aws" Spring profile (services/_shared/overlays/prod).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../../base
+  - hpa.yaml
+  - pdb.yaml
+  - external-secrets.yaml
+images:
+  - name: grocery/customer-service
+    newName: ghcr.io/manivannancsmca/grocery-customer-service
+    newTag: unset
+patches:
+  - target: { kind: Deployment, name: customer-service }
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: customer-service
+      spec:
+        replicas: 3
+        template:
+          spec:
+            topologySpreadConstraints:
+              - maxSkew: 1
+                topologyKey: topology.kubernetes.io/zone
+                whenUnsatisfiable: DoNotSchedule
+                labelSelector: {}
+                matchLabelKeys: [app.kubernetes.io/name, pod-template-hash]
+            containers:
+              - name: app
+                resources:
+                  requests: { cpu: 250m, memory: 768Mi }
+                  limits: { memory: 1Gi }
+                envFrom:
+                  - configMapRef: { name: grocery-runtime }
+                  - secretRef: { name: customer-service-db }
+                  - secretRef: { name: customer-service-kafka }

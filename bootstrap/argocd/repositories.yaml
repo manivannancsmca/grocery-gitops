@@ -37,6 +37,19 @@ stringData:
   type: helm
   url: https://kubernetes-sigs.github.io/metrics-server/
 ---
+# External Secrets Operator (EKS environments: secrets from AWS Secrets Manager).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helm-external-secrets
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: external-secrets
+  type: helm
+  url: https://charts.external-secrets.io
+---
 # Envoy Gateway publishes its chart as an OCI artifact on Docker Hub.
 apiVersion: v1
 kind: Secret

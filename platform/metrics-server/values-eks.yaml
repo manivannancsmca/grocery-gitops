@@ -1,0 +1,8 @@
+# metrics-server on EKS: kubelets have proper serving certificates, so the defaults are kept (no insecure TLS).
+replicas: 2
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { memory: 256Mi }

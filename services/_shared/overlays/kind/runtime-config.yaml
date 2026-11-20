@@ -1,0 +1,35 @@
+# Settings every service reads (envFrom) on the Kind cluster. The services run their "docker" Spring profile (the
+# same one as local Compose); only the infrastructure host names change: they live in namespace grocery-infra.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grocery-runtime
+data:
+  SPRING_PROFILES_ACTIVE: docker
+  GROCERY_ENV: kind
+  TZ: UTC
+  # Small, container-aware JVMs for a laptop (same as Compose).
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -Xss512k -XX:ReservedCodeCacheSize=64m"
+
+  # Infrastructure (namespace grocery-infra)
+  DB_HOST: mysql.grocery-infra.svc.cluster.local
+  DB_PORT: "3306"
+  KAFKA_BOOTSTRAP_SERVERS: kafka.grocery-infra.svc.cluster.local:29092
+  REDIS_HOST: redis.grocery-infra.svc.cluster.local
+  ELASTICSEARCH_URIS: http://elasticsearch.grocery-infra.svc.cluster.local:9200
+  GROCERY_EVENTS_AVRO_SCHEMA_REGISTRY_URL: http://schema-registry.grocery-infra.svc.cluster.local:8081
+  SPRING_MAIL_HOST: mailpit.grocery-infra.svc.cluster.local
+  SPRING_MAIL_PORT: "1025"
+  KAFKA_CONNECT_URL: http://kafka-connect.grocery-infra.svc.cluster.local:8083   # gateway: admin connector routes
+
+  # Application
+  GATEWAY_ALLOWED_ORIGINS: http://grocery.localtest.me
+  APP_BASE_URL: http://grocery.localtest.me                                     # absolute links in e-mails
+  APPROVAL_JWKS_URI: http://ai-orchestrator-service:8115/.well-known/approval-jwks.json
+  DEV_SEED_ENABLED: "true"         # dev.*@grocery.local accounts on the sign-in page (never in production)
+  AI_PROVIDER: scripted            # deterministic assistant without a model (no Ollama on Kind)
+  GROCERY_OUTBOX_CLEANUP_RETENTION: 7d
+  GROCERY_OUTBOX_CLEANUP_INTERVAL: 1h
+  GROCERY_HOUSEKEEPING_INITIALDELAY: 30m
+  # No trace collector on Kind: keep no traces (nothing is exported).
+  TRACING_SAMPLING_PROBABILITY: "0.0"

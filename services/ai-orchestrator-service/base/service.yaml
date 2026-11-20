@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-orchestrator-service
+spec:
+  selector:
+    app.kubernetes.io/name: ai-orchestrator-service
+  ports:
+    - { name: http, port: 8115, targetPort: http }

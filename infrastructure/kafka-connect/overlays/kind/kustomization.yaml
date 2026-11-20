@@ -1,0 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery-infra
+resources:
+  - ../../base
+# Uses the mysql-users secret of the platform-init app (key DEBEZIUM_PASSWORD).

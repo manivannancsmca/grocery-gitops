@@ -1,0 +1,18 @@
+# Mailpit web UI at http://mail.localtest.me (Kind only).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mailpit
+spec:
+  parentRefs:
+    - name: public
+      namespace: grocery-edge
+      sectionName: http
+  hostnames:
+    - mail.localtest.me
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: mailpit
+          port: 8025

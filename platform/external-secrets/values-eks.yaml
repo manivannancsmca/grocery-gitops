@@ -1,0 +1,12 @@
+# External Secrets Operator (chart 2.15.0) on EKS: copies secrets from AWS Secrets Manager into Kubernetes Secrets
+# (ExternalSecret resources in services/*/overlays/<env>). The controller's service account gets read access to
+# grocery/<env>/* through EKS Pod Identity (or IRSA: add the role ARN annotation below); see docs/eks.md.
+installCRDs: true
+serviceAccount:
+  name: external-secrets
+  annotations: {}
+    # IRSA alternative to Pod Identity:
+    # eks.amazonaws.com/role-arn: arn:aws:iam::<account-id>:role/grocery-<env>-external-secrets
+resources:
+  requests: { cpu: 20m, memory: 64Mi }
+  limits: { memory: 256Mi }

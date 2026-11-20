@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery
+resources:
+  - ../staging
+patches:
+  # Production differs from staging only in these values (domain, environment tag, trace sampling).
+  - target: { kind: ConfigMap, name: grocery-runtime }
+    patch: |
+      - { op: replace, path: /data/GROCERY_ENV, value: prod }
+      - { op: replace, path: /data/DB_HOST, value: REPLACE-prod-rds-endpoint.REGION.rds.amazonaws.com }
+      - { op: replace, path: /data/KAFKA_BOOTSTRAP_SERVERS, value: "REPLACE-prod-msk-bootstrap-brokers-sasl-scram:9096" }
+      - { op: replace, path: /data/REDIS_HOST, value: REPLACE-prod-elasticache-primary-endpoint }
+      - { op: replace, path: /data/ELASTICSEARCH_URIS, value: "https://REPLACE-prod-search-endpoint:443" }
+      - { op: replace, path: /data/JWT_ISSUER, value: "https://REPLACE-domain" }
+      - { op: replace, path: /data/GATEWAY_ALLOWED_ORIGINS, value: "https://REPLACE-domain" }
+      - { op: replace, path: /data/APP_BASE_URL, value: "https://REPLACE-domain" }
+      - { op: replace, path: /data/TRACING_SAMPLING_PROBABILITY, value: "0.05" }

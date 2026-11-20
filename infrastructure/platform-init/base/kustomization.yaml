@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: grocery
+      app.kubernetes.io/component: setup
+    includeSelectors: false
+resources:
+  - jobs.yaml
+configMapGenerator:
+  - name: platform-init-scripts
+    files:
+      - mysql-users.sh
+generatorOptions:
+  # A fixed name: the Jobs are hooks and are recreated on every sync anyway.
+  disableNameSuffixHash: true
+# The init containers use the placeholder image "grocery/platform-init"; the environment overlay maps it to the
+# registry, tag and digest (CI updates the overlay after every build of the bundle).

@@ -1,0 +1,248 @@
+# =====================================================================================================================
+# One-off setup steps, run by Argo CD as Sync hooks every time this Application syncs (a new bundle image, a changed
+# script or secret). Every step is idempotent. Order (sync waves):
+#   0  mysql-init     databases + users (passwords from the mysql-users secret)
+#   0  kafka-topics   domain topics, dead-letter topics, delivery.location, _grocery.dead-letter-actions
+#   1  schema-init    Avro schemas -> Schema Registry (BACKWARD_TRANSITIVE, never registers an incompatible one)
+#   2  connect-init   Debezium outbox connectors -> Kafka Connect
+#
+# Each Job copies the setup data from the grocery-platform-init image (built by the app repository's CI from the same
+# files the Compose setup uses; tag/digest set by CI in overlays/<env>) into an emptyDir, then runs the step in the
+# tool's own image. BeforeHookCreation: the previous run's Job is deleted when the next sync starts, so its logs stay
+# readable until then.
+# =====================================================================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-init
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql-init
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        - name: bundle
+          image: grocery/platform-init
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+      containers:
+        - name: mysql-init
+          image: mysql:8.4.13
+          command: ["/bin/bash", "/scripts/mysql-users.sh"]
+          env:
+            - { name: MYSQL_HOST, value: mysql }
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: mysql-root, key: MYSQL_ROOT_PASSWORD }
+          envFrom:
+            - secretRef: { name: mysql-users }
+          volumeMounts:
+            - { name: work, mountPath: /work }
+            - { name: scripts, mountPath: /scripts }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 256Mi }
+      volumes:
+        - name: work
+          emptyDir: { sizeLimit: 64Mi }
+        - name: scripts
+          configMap: { name: platform-init-scripts }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka-topics
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        - name: bundle
+          image: grocery/platform-init
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+      containers:
+        - name: kafka-topics
+          image: apache/kafka:4.3.2
+          command: ["/bin/bash", "/work/kafka/create-topics.sh"]
+          env:
+            - { name: KAFKA_BOOTSTRAP, value: "kafka:29092" }
+            - { name: KAFKA_HEAP_OPTS, value: "-Xmx256m" }
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 384Mi }
+      volumes:
+        - name: work
+          emptyDir: { sizeLimit: 64Mi }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: schema-init
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: schema-init
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        - name: bundle
+          image: grocery/platform-init
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+      containers:
+        - name: schema-init
+          # Same image and script as the local Compose "schema-init" container (needs bash, curl, sed, tr).
+          image: quay.io/debezium/connect:3.7.1.Final
+          command: ["/bin/bash", "/work/schema-registry/register-schemas.sh"]
+          env:
+            - { name: SCHEMA_REGISTRY_URL, value: "http://schema-registry:8081" }
+            - { name: SCHEMAS_DIR, value: /work/schemas }
+            - { name: SCHEMA_COMPATIBILITY, value: BACKWARD_TRANSITIVE }
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { memory: 128Mi }
+      volumes:
+        - name: work
+          emptyDir: { sizeLimit: 64Mi }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: connect-init
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: connect-init
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        - name: bundle
+          image: grocery/platform-init
+          volumeMounts:
+            - { name: work, mountPath: /work }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+      containers:
+        - name: connect-init
+          image: quay.io/debezium/connect:3.7.1.Final
+          command: ["/bin/bash", "/work/debezium/register-connectors.sh"]
+          env:
+            - { name: CONNECT_URL, value: "http://kafka-connect:8083" }
+            - { name: SERVICES_DIR, value: /work/services }
+          volumeMounts:
+            - { name: work, mountPath: /work }
+            - { name: tmp, mountPath: /tmp }
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { memory: 128Mi }
+      volumes:
+        - name: work
+          emptyDir: { sizeLimit: 64Mi }
+        - name: tmp
+          emptyDir: { sizeLimit: 16Mi }

@@ -1,0 +1,10 @@
+# Envoy Gateway on EKS (chart 1.10.0): two controller replicas; the Envoy proxies get an AWS Network Load Balancer
+# (platform/gateway/overlays/<env>).
+deployment:
+  replicas: 2
+  envoyGateway:
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { memory: 1Gi }
+podDisruptionBudget:
+  minAvailable: 1

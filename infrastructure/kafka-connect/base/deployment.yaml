@@ -1,0 +1,79 @@
+# Kafka Connect with Debezium: the outbox relay of every service (binlog -> Kafka). Its configuration, offsets and
+# status live in Kafka topics, so the pod is stateless. The connectors are registered by
+# infrastructure/platform-init (connect-init Job) from services/*/deploy/debezium-connector.json of the app repo;
+# those configs reference ${env:DEBEZIUM_DB_PASSWORD}, which comes from the secret below.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connect
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: Recreate          # one Connect worker at a time on Kind (single-node Kafka, small memory)
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka-connect
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka-connect
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: kafka-connect
+          image: quay.io/debezium/connect:3.7.1.Final
+          env:
+            - { name: BOOTSTRAP_SERVERS, value: "kafka:29092" }
+            - { name: GROUP_ID, value: grocery-connect }
+            - { name: CONFIG_STORAGE_TOPIC, value: _connect_configs }
+            - { name: OFFSET_STORAGE_TOPIC, value: _connect_offsets }
+            - { name: STATUS_STORAGE_TOPIC, value: _connect_status }
+            - { name: CONFIG_STORAGE_REPLICATION_FACTOR, value: "1" }
+            - { name: OFFSET_STORAGE_REPLICATION_FACTOR, value: "1" }
+            - { name: STATUS_STORAGE_REPLICATION_FACTOR, value: "1" }
+            - { name: KEY_CONVERTER, value: org.apache.kafka.connect.storage.StringConverter }
+            - { name: VALUE_CONVERTER, value: org.apache.kafka.connect.json.JsonConverter }
+            - { name: CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE, value: "false" }
+            - { name: CONNECT_CONFIG_PROVIDERS, value: env }
+            - { name: CONNECT_CONFIG_PROVIDERS_ENV_CLASS, value: org.apache.kafka.common.config.provider.EnvVarConfigProvider }
+            - { name: HEAP_OPTS, value: "-Xms256m -Xmx512m" }
+            # The connector configs read ${env:DEBEZIUM_DB_PASSWORD}; the secret stores it per MySQL user name.
+            - name: DEBEZIUM_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: mysql-users, key: DEBEZIUM_PASSWORD }
+          ports:
+            - { name: http, containerPort: 8083 }
+          startupProbe:
+            httpGet: { path: /connectors, port: http }
+            periodSeconds: 5
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: { path: /connectors, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 100m, memory: 640Mi }
+            limits: { memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-connect
+spec:
+  selector:
+    app.kubernetes.io/name: kafka-connect
+  ports:
+    - { name: http, port: 8083, targetPort: http }

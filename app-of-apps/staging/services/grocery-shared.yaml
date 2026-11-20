@@ -1,0 +1,32 @@
+# Settings shared by every service (ConfigMap grocery-runtime) and the network policies of namespace grocery.
+# Wave 15: before the services that read the ConfigMap.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grocery-shared
+  namespace: argocd
+  labels:
+    grocery.io/group: services
+  annotations:
+    argocd.argoproj.io/sync-wave: "15"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: grocery-apps-staging
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: services/_shared/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grocery
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

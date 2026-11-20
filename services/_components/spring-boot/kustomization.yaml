@@ -1,0 +1,24 @@
+# =====================================================================================================================
+# Kustomize Component shared by the 17 Spring Boot services: everything that is the same for all of them, so each
+# service's base only says what is specific (name, port, its own settings).
+#
+#   - security: non-root user 10001 (the image's), read-only root filesystem (+ /tmp emptyDir), no privilege
+#     escalation, all capabilities dropped, RuntimeDefault seccomp  -> passes Pod Security "restricted"
+#   - health: startup / liveness / readiness probes on Spring Boot's /actuator/health/{liveness,readiness}
+#     (management.endpoint.health.probes.enabled=true in every service)
+#   - graceful shutdown: preStop sleep (endpoints are removed before the JVM stops) + server.shutdown=graceful
+#   - runtime settings shared by every service: envFrom ConfigMap "grocery-runtime" (services/_shared/overlays/<env>)
+#   - rollout: surge one new pod, never take an old one away first
+#   - default resources (Kind sizes; the staging / prod overlays raise them)
+# =====================================================================================================================
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: grocery
+      app.kubernetes.io/component: backend
+    includeSelectors: false
+patches:
+  - target:
+      kind: Deployment
+    path: deployment-defaults.yaml

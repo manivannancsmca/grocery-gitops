@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: grocery-infra
+resources:
+  - ../../base
+  # Encrypted for this cluster by bootstrap/scripts/seal-kind-secrets.ps1:
+  #   mysql-root   MYSQL_ROOT_PASSWORD
+  #   mysql-users  <USER>_PASSWORD for every per-service user, Debezium and monitoring. Used by the mysql-init Job
+  #                (platform-init) and by Kafka Connect, so it is deployed here, in the first infrastructure wave.
+  - mysql-root.sealed.yaml
+  - mysql-users.sealed.yaml

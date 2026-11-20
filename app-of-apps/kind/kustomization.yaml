@@ -6,9 +6,14 @@
 #   wave  -30  Sealed Secrets, metrics-server, Envoy Gateway      platform/*.yaml
 #   wave  -20  public Gateway + Argo CD route                     platform/gateway.yaml
 #   wave  -10  Argo CD itself (self-managed)                      platform/argocd.yaml
-#   wave 0-10  stateful infrastructure + setup Jobs               infra/*.yaml        (step 2)
-#   wave   20  the 17 Spring Boot services                        services/*.yaml     (step 3)
-#   wave   30  grocery-web-ui                                     frontend/*.yaml     (step 3)
+#   wave   -5  network policies of grocery-infra                  infra/network-policies.yaml
+#   wave    0  MySQL, Kafka, Redis, Elasticsearch, Mailpit        infra/*.yaml        (no pruning)
+#   wave    2  Schema Registry                                    infra/schema-registry.yaml
+#   wave    3  Kafka Connect (Debezium)                           infra/kafka-connect.yaml
+#   wave    5  setup Jobs (databases, topics, schemas, connectors) infra/platform-init.yaml
+#   wave   15  shared settings + network policies of grocery      services/grocery-shared.yaml
+#   wave   20  the 17 Spring Boot services                        services/*.yaml
+#   wave   30  grocery-web-ui                                     frontend/grocery-web-ui.yaml
 #
 # The root waits for each wave's Applications to be Healthy before the next wave (Application health check in
 # bootstrap/argocd/values-common.yaml).
@@ -17,9 +22,23 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../projects/kind
+  # platform
   - platform/cluster-base.yaml
   - platform/sealed-secrets.yaml
   - platform/metrics-server.yaml
   - platform/envoy-gateway.yaml
   - platform/gateway.yaml
   - platform/argocd.yaml
+  # stateful infrastructure (no pruning, retained volumes)
+  - infra/network-policies.yaml
+  - infra/mysql.yaml
+  - infra/kafka.yaml
+  - infra/redis.yaml
+  - infra/elasticsearch.yaml
+  - infra/mailpit.yaml
+  - infra/schema-registry.yaml
+  - infra/kafka-connect.yaml
+  # The following need images built by the app repository's CI (first run: see docs/workflow.md):
+  # - infra/platform-init.yaml
+  # - services/...
+  # - frontend/grocery-web-ui.yaml

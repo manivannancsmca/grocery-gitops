@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: delivery-service
+  namespace: argocd
+  labels:
+    grocery.io/group: services
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+  # Deleting this Application deletes the service's resources (stateless: safe to remove and recreate).
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: grocery-apps-prod
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: services/delivery-service/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grocery
+  revisionHistoryLimit: 10
+  # The HorizontalPodAutoscaler owns the replica count; Git only sets the starting value.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: [/spec/replicas]
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }

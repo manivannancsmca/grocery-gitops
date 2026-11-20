@@ -28,6 +28,7 @@ spec:
     - { group: batch, kind: Job }
     - { group: policy, kind: PodDisruptionBudget }
     - { group: networking.k8s.io, kind: NetworkPolicy }
+    - { group: gateway.networking.k8s.io, kind: HTTPRoute }
     - { group: bitnami.com, kind: SealedSecret }
   orphanedResources:
     warn: true
