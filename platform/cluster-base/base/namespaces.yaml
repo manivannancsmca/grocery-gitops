@@ -1,0 +1,62 @@
+# The namespaces of the platform. Every one is protected from deletion by Argo CD (Delete=false): deleting a
+# namespace deletes everything inside it, including databases. Removing one is a manual, deliberate kubectl step.
+#
+# Pod Security Admission: "baseline" is enforced everywhere (no privileged pods, no host access); "restricted" is
+# reported as warnings and audit events, so gaps show up before it is enforced.
+# grocery.io/gateway-access=true lets HTTPRoutes in the namespace attach to the public gateway.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    grocery.io/gateway-access: "true"
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: envoy-gateway-system
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grocery-edge
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grocery-infra
+  labels:
+    grocery.io/tier: infrastructure
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grocery
+  labels:
+    grocery.io/tier: applications
+    grocery.io/gateway-access: "true"
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false

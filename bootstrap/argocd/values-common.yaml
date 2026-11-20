@@ -1,0 +1,149 @@
+# =====================================================================================================================
+# Argo CD (Helm chart argo/argo-cd 10.18.2 = Argo CD v3.6.2): settings shared by every environment.
+#
+# Used twice, on purpose:
+#   1. bootstrap/scripts/bootstrap-kind.ps1 installs Argo CD with `helm upgrade --install` and these values;
+#   2. the "argocd" Application (app-of-apps/<env>/platform/argocd.yaml) then manages the same release from Git,
+#      so every later change to Argo CD itself is a Git commit too (Argo CD manages itself).
+# The environment file (values-kind.yaml, later values-staging.yaml / values-prod.yaml) is layered on top.
+# =====================================================================================================================
+
+crds:
+  # Keep the CRDs if the chart is ever uninstalled: deleting the Application CRD would delete every Application.
+  keep: true
+
+# No SSO and no notifications on Kind (saves memory). The EKS values turn on OIDC (Dex) and Slack/e-mail alerts.
+dex:
+  enabled: false
+notifications:
+  enabled: false
+
+configs:
+  # ------------------------------------------------------------------------------------------------- argocd-cm
+  cm:
+    # Annotation tracking (the Argo CD 3.x default, set explicitly): resources are matched to their Application by an
+    # annotation, so copied labels can never make Argo CD prune a resource it does not own.
+    application.resourceTrackingMethod: annotation
+    # Poll Git every 3 minutes (plus jitter). A GitHub webhook can make this instant later.
+    timeout.reconciliation: 180s
+    timeout.reconciliation.jitter: 30s
+    # Keep exec (a shell in pods from the UI) off; use kubectl with your own RBAC instead.
+    exec.enabled: false
+
+    # ---- Health assessment ----------------------------------------------------------------------------------------
+    # App of Apps: Argo CD 3.x does not assess the health of child Applications by default, so sync waves on the
+    # child Applications would not wait for each other. With this check the root app moves to the next wave only
+    # when the previous child Applications are Healthy (platform -> infrastructure -> services -> frontend).
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+
+    # Gateway API: a Gateway is healthy once the controller has programmed it (Envoy is running and listening).
+    resource.customizations.health.gateway.networking.k8s.io_Gateway: |
+      hs = { status = "Progressing", message = "Waiting for the gateway controller" }
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, c in ipairs(obj.status.conditions) do
+          if c.type == "Programmed" and c.status == "True" then
+            return { status = "Healthy", message = c.message }
+          end
+          if c.type == "Programmed" and c.status == "False" and c.reason ~= "Pending" then
+            return { status = "Degraded", message = c.message }
+          end
+        end
+      end
+      return hs
+
+    # Gateway API: an HTTPRoute is healthy once every parent Gateway accepted it and all its backends exist.
+    resource.customizations.health.gateway.networking.k8s.io_HTTPRoute: |
+      hs = { status = "Progressing", message = "Waiting for the gateway to accept the route" }
+      if obj.status == nil or obj.status.parents == nil or #obj.status.parents == 0 then
+        return hs
+      end
+      for _, parent in ipairs(obj.status.parents) do
+        local accepted = false
+        if parent.conditions ~= nil then
+          for _, c in ipairs(parent.conditions) do
+            if (c.type == "Accepted" or c.type == "ResolvedRefs") and c.status == "False" then
+              return { status = "Degraded", message = c.type .. ": " .. (c.message or c.reason) }
+            end
+            if c.type == "Accepted" and c.status == "True" then
+              accepted = true
+            end
+          end
+        end
+        if not accepted then
+          return hs
+        end
+      end
+      return { status = "Healthy", message = "Accepted by every parent gateway" }
+
+  # --------------------------------------------------------------------------------------- argocd-cmd-params-cm
+  params:
+    # TLS ends at the gateway (Envoy on Kind, the AWS load balancer on EKS); argocd-server speaks plain HTTP behind it.
+    server.insecure: true
+    # Apply only what is out of sync and use server-side diff: fewer API calls, better diffs for big CRDs.
+    controller.diff.server.side: "true"
+
+  # ------------------------------------------------------------------------------------------- argocd-rbac-cm
+  # Deny by default. Who may do what is decided per AppProject (projects/<env>/*.yaml) and by these global roles.
+  # Accounts (Kind) or SSO groups (EKS) are bound to roles in the environment values file.
+  rbac:
+    policy.default: ""
+    policy.matchMode: glob
+    scopes: "[groups, email]"
+    policy.csv: |
+      # ---- developer: sees and syncs the non-production apps, restarts a Deployment, reads logs. No delete, no
+      #      changes to projects, repositories, clusters or Argo CD settings.
+      p, role:developer, applications, get, grocery-apps-*/*, allow
+      p, role:developer, applications, sync, grocery-apps-*/*, allow
+      p, role:developer, applications, action/apps/Deployment/restart, grocery-apps-*/*, allow
+      p, role:developer, applications, get, grocery-infra-*/*, allow
+      p, role:developer, logs, get, grocery-apps-*/*, allow
+      p, role:developer, logs, get, grocery-infra-*/*, allow
+      p, role:developer, projects, get, grocery-apps-*, allow
+      p, role:developer, projects, get, grocery-infra-*, allow
+      # Production stays read-only for developers.
+      p, role:developer, applications, sync, grocery-apps-prod/*, deny
+      p, role:developer, applications, action/*, grocery-apps-prod/*, deny
+
+      # ---- release-manager: everything a developer can do, in every environment, plus rollback (update) and
+      #      infrastructure syncs. Still no delete and no platform changes.
+      p, role:release-manager, applications, get, grocery-*/*, allow
+      p, role:release-manager, applications, sync, grocery-*/*, allow
+      p, role:release-manager, applications, update, grocery-apps-*/*, allow
+      p, role:release-manager, applications, action/*, grocery-*/*, allow
+      p, role:release-manager, logs, get, grocery-*/*, allow
+      p, role:release-manager, projects, get, grocery-*, allow
+
+# ------------------------------------------------------------------------------------------------------ components
+# Small requests so the whole platform fits on a laptop; the EKS values raise them and add replicas.
+controller:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+server:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits: { memory: 256Mi }
+repoServer:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 512Mi }
+applicationSet:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+redis:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }

@@ -1,0 +1,25 @@
+# =====================================================================================================================
+# Everything the root Application "grocery-kind" (roots/kind.yaml) creates on the Kind cluster.
+#
+#   wave -100  AppProjects (access boundaries)                    projects/kind
+#   wave  -40  namespaces + Retain storage class                  platform/cluster-base.yaml
+#   wave  -30  Sealed Secrets, metrics-server, Envoy Gateway      platform/*.yaml
+#   wave  -20  public Gateway + Argo CD route                     platform/gateway.yaml
+#   wave  -10  Argo CD itself (self-managed)                      platform/argocd.yaml
+#   wave 0-10  stateful infrastructure + setup Jobs               infra/*.yaml        (step 2)
+#   wave   20  the 17 Spring Boot services                        services/*.yaml     (step 3)
+#   wave   30  grocery-web-ui                                     frontend/*.yaml     (step 3)
+#
+# The root waits for each wave's Applications to be Healthy before the next wave (Application health check in
+# bootstrap/argocd/values-common.yaml).
+# =====================================================================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../projects/kind
+  - platform/cluster-base.yaml
+  - platform/sealed-secrets.yaml
+  - platform/metrics-server.yaml
+  - platform/envoy-gateway.yaml
+  - platform/gateway.yaml
+  - platform/argocd.yaml

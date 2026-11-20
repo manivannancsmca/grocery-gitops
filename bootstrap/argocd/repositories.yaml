@@ -1,0 +1,52 @@
+# Public Helm chart sources the platform add-ons come from. They hold no credentials, so they live in Git.
+# The GitOps repository itself is registered by bootstrap/scripts/bootstrap-kind.ps1 with a read-only deploy key
+# (an SSH private key never goes into Git).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helm-argo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: argo
+  type: helm
+  url: https://argoproj.github.io/argo-helm
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helm-sealed-secrets
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: sealed-secrets
+  type: helm
+  url: https://bitnami.github.io/sealed-secrets
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helm-metrics-server
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: metrics-server
+  type: helm
+  url: https://kubernetes-sigs.github.io/metrics-server/
+---
+# Envoy Gateway publishes its chart as an OCI artifact on Docker Hub.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helm-envoy-gateway
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: envoy-gateway
+  type: helm
+  enableOCI: "true"
+  url: docker.io/envoyproxy

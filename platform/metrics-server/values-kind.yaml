@@ -1,0 +1,8 @@
+# metrics-server (chart 3.14.0): CPU / memory metrics for `kubectl top` and the HorizontalPodAutoscalers.
+# Kind's kubelets use self-signed serving certificates, so certificate checks against them are skipped here only
+# (EKS kubelets have proper certificates).
+args:
+  - --kubelet-insecure-tls
+resources:
+  requests: { cpu: 20m, memory: 48Mi }
+  limits: { memory: 128Mi }

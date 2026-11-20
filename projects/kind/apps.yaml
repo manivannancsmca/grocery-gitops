@@ -1,0 +1,38 @@
+# grocery-apps-kind: the 17 Spring Boot services and the grocery-web-ui frontend on Kind. Namespace grocery only,
+# only from the GitOps repository, namespaced kinds from an allow-list, no cluster-scoped resources.
+# Who may sync these apps is set by the global roles in bootstrap/argocd/values-common.yaml (role:developer can
+# sync grocery-apps-*, role:release-manager can also roll back).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: grocery-apps-kind
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Microservices and frontend on the Kind cluster (namespace grocery)
+  sourceRepos:
+    - git@github.com:manivannancsmca/grocery-gitops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: grocery
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - { group: "", kind: ConfigMap }
+    - { group: "", kind: Service }
+    - { group: "", kind: ServiceAccount }
+    - { group: apps, kind: Deployment }
+    - { group: batch, kind: Job }
+    - { group: autoscaling, kind: HorizontalPodAutoscaler }
+    - { group: policy, kind: PodDisruptionBudget }
+    - { group: networking.k8s.io, kind: NetworkPolicy }
+    - { group: gateway.networking.k8s.io, kind: HTTPRoute }
+    - { group: bitnami.com, kind: SealedSecret }
+  orphanedResources:
+    warn: true
+    ignore:
+      - kind: Secret
+      - kind: ConfigMap
+        name: kube-root-ca.crt

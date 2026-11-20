@@ -1,0 +1,33 @@
+# =====================================================================================================================
+# ROOT Application of the Kind environment (App of Apps). The only Application applied by hand (by
+# bootstrap/scripts/bootstrap-kind.ps1); it creates the AppProjects and every child Application listed in
+# app-of-apps/kind, which in turn deploy the platform, infrastructure, services and frontend.
+#
+# Pruning is OFF here on purpose: deleting a child Application file from Git leaves the Application in the cluster
+# (shown as "requires pruning") until a person prunes it deliberately. Infrastructure Applications also have no
+# cascade-delete finalizer, so even a deliberate prune never deletes a database.
+# =====================================================================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grocery-kind
+  namespace: argocd
+  labels:
+    grocery.io/group: root
+spec:
+  project: grocery-platform
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: app-of-apps/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

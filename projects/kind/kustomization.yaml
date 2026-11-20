@@ -1,0 +1,10 @@
+# AppProjects of the Kind environment = the access boundaries:
+#   grocery-platform    cluster add-ons + Argo CD (admins only, the only project with cluster-scoped resources)
+#   grocery-infra-kind  stateful infrastructure in namespace grocery-infra (no pruning)
+#   grocery-apps-kind   services + frontend in namespace grocery
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - platform.yaml
+  - infra.yaml
+  - apps.yaml

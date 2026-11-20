@@ -1,0 +1,18 @@
+# Never commit plain secrets. Sealed (encrypted) secrets are fine: they end in .sealed.yaml.
+*.key
+*.pem
+id_*
+*-deploy-key*
+secrets/
+*.secret.yaml
+*.unsealed.yaml
+.env
+.env.*
+
+# Local tool output
+.kustomize-out/
+rendered/
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json

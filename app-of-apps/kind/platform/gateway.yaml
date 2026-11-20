@@ -1,0 +1,31 @@
+# The public Gateway (*.localtest.me on Kind), its GatewayClass / EnvoyProxy settings, and the Argo CD route.
+# Wave -20: after the Envoy Gateway controller and the Gateway API CRDs exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: argocd
+  labels:
+    grocery.io/group: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: grocery-platform
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: platform/gateway/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

@@ -1,0 +1,40 @@
+# grocery-platform: cluster add-ons and Argo CD itself (Envoy Gateway, Sealed Secrets, metrics-server, namespaces,
+# storage). The only project allowed to create cluster-scoped resources, so only Argo CD admins use it: no project
+# roles, so developers and release managers cannot even see it.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: grocery-platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+  # Refuse to delete the project while Applications still use it.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Cluster add-ons and Argo CD (admins only)
+  sourceRepos:
+    - git@github.com:manivannancsmca/grocery-gitops.git
+    - https://argoproj.github.io/argo-helm
+    - https://bitnami.github.io/sealed-secrets
+    - https://kubernetes-sigs.github.io/metrics-server/
+    - docker.io/envoyproxy
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: envoy-gateway-system
+    - server: https://kubernetes.default.svc
+      namespace: grocery-edge
+    # Namespace objects themselves have no namespace.
+    - server: https://kubernetes.default.svc
+      namespace: ""
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  # No orphaned-resource monitoring here: kube-system is full of resources Kubernetes itself creates.

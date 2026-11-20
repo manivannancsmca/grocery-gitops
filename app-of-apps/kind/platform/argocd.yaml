@@ -1,0 +1,47 @@
+# Argo CD manages itself: the bootstrap script installs it once with Helm; from then on this Application keeps the
+# same Helm release (same chart version and values files) in sync with Git, plus the declarative repository
+# settings in bootstrap/argocd. Upgrading Argo CD = changing targetRevision below in a pull request.
+#
+# Safeguards: no automatic pruning and no cascade-delete finalizer (deleting this Application must never uninstall
+# Argo CD); the chart keeps its CRDs on uninstall (crds.keep).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    grocery.io/group: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: grocery-platform
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.18.2
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/bootstrap/argocd/values-common.yaml
+          - $values/bootstrap/argocd/values-kind.yaml
+    # The values files above come from this repository...
+    - repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+      targetRevision: main
+      ref: values
+    # ...and so do the declarative settings (Helm repositories) in bootstrap/argocd.
+    - repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+      targetRevision: main
+      path: bootstrap/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

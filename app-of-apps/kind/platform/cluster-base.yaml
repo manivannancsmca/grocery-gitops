@@ -1,0 +1,28 @@
+# Namespaces (with Pod Security labels) and the Retain storage class. Wave -40: before everything else.
+# No automatic pruning and no cascade-delete finalizer: removing this Application, or a namespace from Git, never
+# deletes a namespace (each Namespace is also annotated Delete=false).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-base
+  namespace: argocd
+  labels:
+    grocery.io/group: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "-40"
+spec:
+  project: grocery-platform
+  source:
+    repoURL: git@github.com:manivannancsmca/grocery-gitops.git
+    targetRevision: main
+    path: platform/cluster-base/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+  revisionHistoryLimit: 10
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 3m }

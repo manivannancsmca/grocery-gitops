@@ -1,0 +1,32 @@
+# Kind cluster for local GitOps development: 1 control plane + 1 worker.
+#   kind create cluster --config bootstrap/kind/cluster.yaml
+# (bootstrap/scripts/bootstrap-kind.ps1 does this for you.)
+#
+# - Node images are pinned by digest (kind v0.33.0 release notes), so every machine gets the same Kubernetes.
+#   v1.36 is used rather than kind's newest default (v1.37) to stay close to what EKS offers.
+# - Traffic: the Envoy Gateway service is a NodePort (30080 / 30443, see platform/gateway/overlays/kind). The worker
+#   publishes those ports on 127.0.0.1:80 and :443, so http://grocery.localtest.me and http://argocd.localtest.me
+#   reach the cluster (*.localtest.me resolves to 127.0.0.1; no hosts-file change needed).
+# - Applications run on the worker; the control plane keeps the Kubernetes components to itself.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: grocery
+networking:
+  # kindnet (the default CNI) enforces NetworkPolicies, which the platform uses.
+  apiServerAddress: 127.0.0.1
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
+  - role: worker
+    image: kindest/node:v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed
+    labels:
+      grocery.io/pool: apps
+    extraPortMappings:
+      - containerPort: 30080   # Envoy Gateway HTTP listener (NodePort)
+        hostPort: 80
+        listenAddress: 127.0.0.1
+        protocol: TCP
+      - containerPort: 30443   # Envoy Gateway HTTPS listener (NodePort), used when TLS is added
+        hostPort: 443
+        listenAddress: 127.0.0.1
+        protocol: TCP

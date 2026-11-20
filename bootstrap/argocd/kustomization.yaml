@@ -1,0 +1,7 @@
+# Applied once by the bootstrap script after Helm has installed Argo CD, and then kept in sync by the
+# "argocd-config" Application (app-of-apps/kind/platform/argocd.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: argocd
+resources:
+  - repositories.yaml

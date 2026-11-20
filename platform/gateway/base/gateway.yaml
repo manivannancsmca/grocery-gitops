@@ -1,0 +1,20 @@
+# The public entry point of the cluster (Gateway API). One HTTP listener; HTTPRoutes in namespaces labelled
+# grocery.io/gateway-access=true (grocery, argocd) attach to it. The overlay sets the class and the host names.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: grocery-edge
+spec:
+  gatewayClassName: envoy
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.example.com"     # replaced per environment
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              grocery.io/gateway-access: "true"

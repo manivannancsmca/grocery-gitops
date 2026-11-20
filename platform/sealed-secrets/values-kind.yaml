@@ -1,0 +1,12 @@
+# Sealed Secrets (chart 2.22.0, controller 0.41.2): secrets are committed encrypted (SealedSecret) and only this
+# controller, with the cluster's private key, can turn them back into Secrets.
+#
+# The name kubeseal looks for by default, so `kubeseal` needs no --controller-name flag.
+fullnameOverride: sealed-secrets-controller
+# Never rotate the sealing key automatically on Kind: the key is backed up once
+# (bootstrap/scripts/backup-sealing-key.ps1) and restored when the cluster is recreated, so the SealedSecrets in
+# Git keep working. EKS uses External Secrets Operator + AWS Secrets Manager instead.
+keyrenewperiod: "0"
+resources:
+  requests: { cpu: 10m, memory: 32Mi }
+  limits: { memory: 128Mi }

@@ -1,0 +1,40 @@
+# grocery-infra-kind: the stateful building blocks on Kind (MySQL, Kafka, Kafka Connect, Schema Registry, Redis,
+# Elasticsearch) and their one-off setup Jobs. Namespace grocery-infra only, namespaced kinds from an allow-list, no
+# cluster-scoped resources. Pruning is off for every Application in this project (see app-of-apps/kind/infra).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: grocery-infra-kind
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Stateful infrastructure on the Kind cluster (namespace grocery-infra)
+  sourceRepos:
+    - git@github.com:manivannancsmca/grocery-gitops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: grocery-infra
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - { group: "", kind: ConfigMap }
+    - { group: "", kind: Service }
+    - { group: "", kind: ServiceAccount }
+    - { group: "", kind: PersistentVolumeClaim }
+    - { group: apps, kind: StatefulSet }
+    - { group: apps, kind: Deployment }
+    - { group: batch, kind: Job }
+    - { group: policy, kind: PodDisruptionBudget }
+    - { group: networking.k8s.io, kind: NetworkPolicy }
+    - { group: bitnami.com, kind: SealedSecret }
+  orphanedResources:
+    warn: true
+    ignore:
+      - kind: Secret            # created by the Sealed Secrets controller from SealedSecrets
+      - kind: ConfigMap
+        name: kube-root-ca.crt
+      - kind: PersistentVolumeClaim   # created by StatefulSet volumeClaimTemplates
+# Developers can view these apps and their logs but not sync them; release managers can sync
+# (global roles in bootstrap/argocd/values-common.yaml).

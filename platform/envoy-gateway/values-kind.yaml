@@ -1,0 +1,13 @@
+# Envoy Gateway (oci://docker.io/envoyproxy/gateway-helm 1.10.0): the Gateway API implementation.
+# ingress-nginx was retired by the Kubernetes project in March 2026, so traffic enters through the Gateway API.
+# The chart also installs the Gateway API CRDs (crds.enabled: true, the default).
+deployment:
+  envoyGateway:
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { memory: 384Mi }
+config:
+  envoyGateway:
+    logging:
+      level:
+        default: info

@@ -1,0 +1,21 @@
+# Argo CD on the local Kind cluster (layered on values-common.yaml).
+global:
+  domain: argocd.localtest.me
+
+configs:
+  cm:
+    url: http://argocd.localtest.me
+    # The built-in admin account stays on locally (it is the break-glass account). On EKS it is disabled once SSO
+    # works: admin.enabled: false.
+    admin.enabled: true
+    # Local accounts for the two everyday roles (login only: no API tokens). The bootstrap script gives them random
+    # passwords and writes them to %USERPROFILE%\.grocery-gitops\argocd-accounts.txt (never into Git).
+    accounts.developer: login
+    accounts.release-manager: login
+
+  rbac:
+    # Bind the local accounts to the roles defined in values-common.yaml (policy.csv). Argo CD merges every
+    # policy.<name>.csv key into the policy, so the role definitions are not repeated here.
+    policy.kind-accounts.csv: |
+      g, developer, role:developer
+      g, release-manager, role:release-manager
