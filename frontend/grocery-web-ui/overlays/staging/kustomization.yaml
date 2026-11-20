@@ -6,12 +6,12 @@ resources:
   - hpa.yaml
   - pdb.yaml
 patches:
-  - target: { kind: HTTPRoute, name: grocery-web-ui }
+  - target: {kind: HTTPRoute, name: grocery-web-ui}
     patch: |
       - op: replace
         path: /spec/hostnames
         value: [staging.grocery.example.com]
-  - target: { kind: Deployment, name: grocery-web-ui }
+  - target: {kind: Deployment, name: grocery-web-ui}
     patch: |
       - op: replace
         path: /spec/replicas
@@ -19,4 +19,5 @@ patches:
 images:
   - name: grocery/grocery-web-ui
     newName: ghcr.io/manivannancsmca/grocery-web-ui
-    newTag: unset
+    newTag: sha-f223affd198278bcf0a2fea4f60a2ff8360dccc4
+    digest: sha256:6fcfb6c224104b8deed9d4016e67994e12b73749c39ce0286292aae3cda4b36b

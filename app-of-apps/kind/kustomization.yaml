@@ -58,5 +58,5 @@ resources:
   - services/review-service.yaml
   - services/ai-orchestrator-service.yaml
   - services/reporting-service.yaml
-  # Enabled once CI has published an image that passed the Trivy gate (see docs/workflow.md):
-  # - frontend/grocery-web-ui.yaml
+  # frontend
+  - frontend/grocery-web-ui.yaml
