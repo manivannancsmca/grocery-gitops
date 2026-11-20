@@ -49,15 +49,20 @@ configs:
       return hs
 
     # Gateway API: a Gateway is healthy once the controller has programmed it (Envoy is running and listening).
+    # Only an invalid Gateway is Degraded; Pending / NoResources / AddressNotAssigned are normal while the Envoy
+    # proxy starts, so they count as Progressing.
     resource.customizations.health.gateway.networking.k8s.io_Gateway: |
       hs = { status = "Progressing", message = "Waiting for the gateway controller" }
       if obj.status ~= nil and obj.status.conditions ~= nil then
         for _, c in ipairs(obj.status.conditions) do
+          if (c.type == "Accepted" or c.type == "Programmed") and c.status == "False" and c.reason == "Invalid" then
+            return { status = "Degraded", message = c.message }
+          end
           if c.type == "Programmed" and c.status == "True" then
             return { status = "Healthy", message = c.message }
           end
-          if c.type == "Programmed" and c.status == "False" and c.reason ~= "Pending" then
-            return { status = "Degraded", message = c.message }
+          if c.type == "Programmed" and c.status == "False" then
+            hs.message = c.reason .. ": " .. c.message
           end
         end
       end
