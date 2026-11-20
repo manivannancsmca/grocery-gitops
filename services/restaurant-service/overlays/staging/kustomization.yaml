@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/restaurant-service
     newName: ghcr.io/manivannancsmca/grocery-restaurant-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:32a5ed719cd46051df8f63df42e5c7242ec4a2cd1fad7f70dac2bebe201e9a48
 patches:
-  - target: { kind: Deployment, name: restaurant-service }
+  - target: {kind: Deployment, name: restaurant-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

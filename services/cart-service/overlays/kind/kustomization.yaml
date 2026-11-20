@@ -3,10 +3,10 @@ kind: Kustomization
 namespace: grocery
 resources:
   - ../../base
-
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful build of cart-service:
 # the tag names the commit, the digest pins the exact image that was tested and scanned.
 images:
   - name: grocery/cart-service
     newName: ghcr.io/manivannancsmca/grocery-cart-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:b2fb804a614b8fd023cc21f06c8aba6f5f91a09457d079c786fe33f154832fe8

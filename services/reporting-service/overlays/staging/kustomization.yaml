@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/reporting-service
     newName: ghcr.io/manivannancsmca/grocery-reporting-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:e326bc6ecef339696a3501eb38cfbdceb2280697ebe321128c3a82121f9f52bc
 patches:
-  - target: { kind: Deployment, name: reporting-service }
+  - target: {kind: Deployment, name: reporting-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

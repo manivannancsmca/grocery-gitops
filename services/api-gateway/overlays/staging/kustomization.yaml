@@ -10,9 +10,10 @@ resources:
 images:
   - name: grocery/api-gateway
     newName: ghcr.io/manivannancsmca/grocery-api-gateway
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:4e585fcfdec4a8755ce3c500e02e23db3eb5004ec9afe904721a09b22e4622f8
 patches:
-  - target: { kind: Deployment, name: api-gateway }
+  - target: {kind: Deployment, name: api-gateway}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/catalog-query-service
     newName: ghcr.io/manivannancsmca/grocery-catalog-query-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:5ed141587ea96c6f44a7575f25886e65ea93231f392b64bc104e4bed2f726cb1
 patches:
-  - target: { kind: Deployment, name: catalog-query-service }
+  - target: {kind: Deployment, name: catalog-query-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

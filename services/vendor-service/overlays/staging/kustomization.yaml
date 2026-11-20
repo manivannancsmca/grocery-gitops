@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/vendor-service
     newName: ghcr.io/manivannancsmca/grocery-vendor-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:bcd6c90b6167120afe284b76578f2421da5e5aba1687a7f22aca9d76b0072a8e
 patches:
-  - target: { kind: Deployment, name: vendor-service }
+  - target: {kind: Deployment, name: vendor-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

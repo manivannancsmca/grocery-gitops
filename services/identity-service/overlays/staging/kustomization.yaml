@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/identity-service
     newName: ghcr.io/manivannancsmca/grocery-identity-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:727aff68e9fd9877a0a694bcf7f37dab4e9aecebeedc6a743d97eade10062c22
 patches:
-  - target: { kind: Deployment, name: identity-service }
+  - target: {kind: Deployment, name: identity-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

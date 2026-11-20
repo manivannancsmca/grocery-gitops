@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/inventory-service
     newName: ghcr.io/manivannancsmca/grocery-inventory-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:d32b5862ec64e208cfbda299247f8045814777954a8cfc9288e1dd1cdd5d550d
 patches:
-  - target: { kind: Deployment, name: inventory-service }
+  - target: {kind: Deployment, name: inventory-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

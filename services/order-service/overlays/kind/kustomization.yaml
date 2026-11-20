@@ -3,10 +3,11 @@ kind: Kustomization
 namespace: grocery
 resources:
   - ../../base
-  - db.sealed.yaml          # order-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
+  - db.sealed.yaml # order-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful build of order-service:
 # the tag names the commit, the digest pins the exact image that was tested and scanned.
 images:
   - name: grocery/order-service
     newName: ghcr.io/manivannancsmca/grocery-order-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:c302dc0806ddcd6c63d76a1ebbaec7fec7fff9a8e58489f67ac9fffb03b713bb

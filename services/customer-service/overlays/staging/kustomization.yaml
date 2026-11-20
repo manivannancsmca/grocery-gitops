@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/customer-service
     newName: ghcr.io/manivannancsmca/grocery-customer-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:f201ef60a09a61998dbbb8511217ec4b62fd2f53488b65a2c68c6c7b611a7402
 patches:
-  - target: { kind: Deployment, name: customer-service }
+  - target: {kind: Deployment, name: customer-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

@@ -11,9 +11,10 @@ resources:
 images:
   - name: grocery/order-service
     newName: ghcr.io/manivannancsmca/grocery-order-service
-    newTag: unset
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:c302dc0806ddcd6c63d76a1ebbaec7fec7fff9a8e58489f67ac9fffb03b713bb
 patches:
-  - target: { kind: Deployment, name: order-service }
+  - target: {kind: Deployment, name: order-service}
     patch: |
       apiVersion: apps/v1
       kind: Deployment

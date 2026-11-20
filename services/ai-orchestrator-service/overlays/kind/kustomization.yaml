@@ -3,17 +3,17 @@ kind: Kustomization
 namespace: grocery
 resources:
   - ../../base
-  - db.sealed.yaml          # ai-orchestrator-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
+  - db.sealed.yaml # ai-orchestrator-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful build of ai-orchestrator-service:
 # the tag names the commit, the digest pins the exact image that was tested and scanned.
 images:
   - name: grocery/ai-orchestrator-service
     newName: ghcr.io/manivannancsmca/grocery-ai-orchestrator-service
-    newTag: unset
-
+    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
+    digest: sha256:b6e8769a6f12fbb033d421dacdfb2e894be30a0fb0ddf3bce45cd9c3479a9cbd
 patches:
   # Spring AI + reactor-netty need more than the default 384Mi.
-  - target: { kind: Deployment, name: ai-orchestrator-service }
+  - target: {kind: Deployment, name: ai-orchestrator-service}
     patch: |
       - op: replace
         path: /spec/template/spec/containers/0/resources
