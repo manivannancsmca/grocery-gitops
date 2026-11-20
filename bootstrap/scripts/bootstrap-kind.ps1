@@ -81,12 +81,19 @@ if (Test-Path $keyBackup) {
 
 # ------------------------------------------------------------------------------------------------- 3. Argo CD
 Write-Step "Argo CD (Helm chart argo-cd $ArgoChartVersion)"
-Invoke-Native helm repo add argo https://argoproj.github.io/argo-helm --force-update
-Invoke-Native helm upgrade --install argocd argo/argo-cd --kube-context $Context `
-    --version $ArgoChartVersion --namespace argocd --create-namespace `
-    -f (Join-Path $Root 'bootstrap\argocd\values-common.yaml') `
-    -f (Join-Path $Root 'bootstrap\argocd\values-kind.yaml') `
-    --wait --timeout 10m
+# Helm installs Argo CD only the first time. After that the "argocd" Application owns the release (Argo CD manages
+# itself), and a second `helm upgrade` would conflict with it: upgrades and setting changes go through Git.
+$selfManaged = & kubectl get applications.argoproj.io argocd --context $Context -n argocd --ignore-not-found -o name 2>$null
+if ($selfManaged) {
+    Write-Host 'Argo CD already manages itself (Application "argocd"); change bootstrap/argocd in Git instead.'
+} else {
+    Invoke-Native helm repo add argo https://argoproj.github.io/argo-helm --force-update
+    Invoke-Native helm upgrade --install argocd argo/argo-cd --kube-context $Context `
+        --version $ArgoChartVersion --namespace argocd --create-namespace `
+        -f (Join-Path $Root 'bootstrap\argocd\values-common.yaml') `
+        -f (Join-Path $Root 'bootstrap\argocd\values-kind.yaml') `
+        --wait --timeout 10m
+}
 
 # -------------------------------------------------------------------------------------- 4. repository credential
 Write-Step 'Registering the GitOps repository (read-only deploy key)'
@@ -137,10 +144,14 @@ $platformApps = 'cluster-base', 'sealed-secrets', 'metrics-server', 'envoy-gatew
 $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
 do {
     Start-Sleep -Seconds 10
-    $rows = & kubectl get applications.argoproj.io --context $Context -n argocd `
-        -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{.status.sync.status}{"|"}{.status.health.status}{"\n"}{end}' 2>$null
+    # JSON, not -o jsonpath: Windows PowerShell 5.1 mangles the quotes of a JSONPath template passed to kubectl.
+    $json = (& kubectl get applications.argoproj.io --context $Context -n argocd -o json) -join "`n"
     $state = @{}
-    foreach ($row in $rows) { if ($row) { $p = $row.Split('|'); $state[$p[0]] = "$($p[1])/$($p[2])" } }
+    if ($LASTEXITCODE -eq 0 -and $json) {
+        foreach ($app in ($json | ConvertFrom-Json).items) {
+            $state[$app.metadata.name] = "$($app.status.sync.status)/$($app.status.health.status)"
+        }
+    }
     $pending = @($platformApps | Where-Object { $state[$_] -ne 'Synced/Healthy' })
     Write-Host ("  " + (($platformApps | ForEach-Object { "$_=$(if ($state[$_]) { $state[$_] } else { 'missing' })" }) -join '  '))
 } while ($pending.Count -gt 0 -and (Get-Date) -lt $deadline)
@@ -155,4 +166,5 @@ Write-Step 'Done'
 Write-Host 'Argo CD UI : http://argocd.localtest.me'
 Write-Host "  developer, release-manager : passwords in $accountsFile"
 Write-Host '  admin (break-glass)        : argocd admin initial-password -n argocd'
-Write-Host 'Argo CD CLI: argocd login argocd.localtest.me --grpc-web --plaintext --username developer'
+# The port is required: without it the CLI assumes 443, even with --plaintext.
+Write-Host 'Argo CD CLI: argocd login argocd.localtest.me:80 --grpc-web --plaintext --username developer'

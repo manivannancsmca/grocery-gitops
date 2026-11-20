@@ -1,5 +1,5 @@
 # Argo CD UI and API at http://argocd.localtest.me (argocd-server runs with server.insecure; the CLI uses
-# `argocd login argocd.localtest.me --grpc-web --plaintext`).
+# `argocd login argocd.localtest.me:80 --grpc-web --plaintext`; the CLI assumes 443 when the port is left out).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

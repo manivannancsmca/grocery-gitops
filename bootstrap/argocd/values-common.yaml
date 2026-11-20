@@ -122,13 +122,19 @@ configs:
       p, role:developer, applications, action/*, grocery-apps-prod/*, deny
 
       # ---- release-manager: everything a developer can do, in every environment, plus rollback (update) and
-      #      infrastructure syncs. Still no delete and no platform changes.
-      p, role:release-manager, applications, get, grocery-*/*, allow
-      p, role:release-manager, applications, sync, grocery-*/*, allow
+      #      infrastructure syncs. Still no delete and no platform changes: the patterns name the apps and infra
+      #      projects explicitly, because grocery-* would also match grocery-platform.
+      p, role:release-manager, applications, get, grocery-apps-*/*, allow
+      p, role:release-manager, applications, get, grocery-infra-*/*, allow
+      p, role:release-manager, applications, sync, grocery-apps-*/*, allow
+      p, role:release-manager, applications, sync, grocery-infra-*/*, allow
       p, role:release-manager, applications, update, grocery-apps-*/*, allow
-      p, role:release-manager, applications, action/*, grocery-*/*, allow
-      p, role:release-manager, logs, get, grocery-*/*, allow
-      p, role:release-manager, projects, get, grocery-*, allow
+      p, role:release-manager, applications, action/*, grocery-apps-*/*, allow
+      p, role:release-manager, applications, action/*, grocery-infra-*/*, allow
+      p, role:release-manager, logs, get, grocery-apps-*/*, allow
+      p, role:release-manager, logs, get, grocery-infra-*/*, allow
+      p, role:release-manager, projects, get, grocery-apps-*, allow
+      p, role:release-manager, projects, get, grocery-infra-*, allow
 
 # ------------------------------------------------------------------------------------------------------ components
 # Small requests so the whole platform fits on a laptop; the EKS values raise them and add replicas.

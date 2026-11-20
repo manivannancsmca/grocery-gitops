@@ -103,7 +103,8 @@ Check what is running:
 
 ```powershell
 kubectl get applications -n argocd          # every Application, with sync and health status
-argocd app list                             # same, after: argocd login argocd.localtest.me --grpc-web --plaintext
+argocd login argocd.localtest.me:80 --grpc-web --plaintext --username developer   # :80 is required
+argocd app list                             # the Applications this account may see
 argocd app get grocery-kind                 # the root and its children
 ```
 
