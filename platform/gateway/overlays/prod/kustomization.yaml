@@ -7,9 +7,9 @@ patches:
   # The NLB terminates TLS on 443 (ACM certificate) and forwards plain HTTP to the same port on Envoy.
   - target: { kind: Gateway, name: public }
     patch: |
-      - op: replace
+      # No hostname filter on the listener: every HTTPRoute names its own host (the app is on the apex domain).
+      - op: remove
         path: /spec/listeners/0/hostname
-        value: "*.REPLACE-domain"
       - op: replace
         path: /spec/listeners/0/port
         value: 443
@@ -17,4 +17,4 @@ patches:
     patch: |
       - op: replace
         path: /spec/hostnames
-        value: [argocd.REPLACE-domain]
+        value: [argocd.grocery.example.com]

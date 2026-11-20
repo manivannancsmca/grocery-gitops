@@ -7,9 +7,10 @@ patches:
   # The NLB terminates TLS on 443 (ACM certificate) and forwards plain HTTP to the same port on Envoy.
   - target: { kind: Gateway, name: public }
     patch: |
-      - op: replace
+      # No hostname filter on the listener: every HTTPRoute names its own host (domain placeholders:
+      # grocery.example.com, replaced when the domain exists - docs/eks.md).
+      - op: remove
         path: /spec/listeners/0/hostname
-        value: "*.REPLACE-domain"
       - op: replace
         path: /spec/listeners/0/port
         value: 443
@@ -17,4 +18,4 @@ patches:
     patch: |
       - op: replace
         path: /spec/hostnames
-        value: [argocd.staging.REPLACE-domain]
+        value: [argocd-staging.grocery.example.com]

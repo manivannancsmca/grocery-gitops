@@ -26,10 +26,10 @@ data:
   SPRING_MAIL_HOST: email-smtp.REGION.amazonaws.com   # Amazon SES SMTP endpoint
   SPRING_MAIL_PORT: "587"
 
-  JWT_ISSUER: https://staging.REPLACE-domain
+  JWT_ISSUER: https://staging.grocery.example.com
   IDENTITY_JWKS_URI: http://identity-service:8101/.well-known/jwks.json
-  GATEWAY_ALLOWED_ORIGINS: https://staging.REPLACE-domain
-  APP_BASE_URL: https://staging.REPLACE-domain
+  GATEWAY_ALLOWED_ORIGINS: https://staging.grocery.example.com
+  APP_BASE_URL: https://staging.grocery.example.com
   APPROVAL_JWKS_URI: http://ai-orchestrator-service:8115/.well-known/approval-jwks.json
   DEV_SEED_ENABLED: "false"
   AI_PROVIDER: anthropic

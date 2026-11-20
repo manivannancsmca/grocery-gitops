@@ -10,7 +10,7 @@ patches:
     patch: |
       - op: replace
         path: /spec/hostnames
-        value: [REPLACE-domain]
+        value: [grocery.example.com]
   - target: { kind: Deployment, name: grocery-web-ui }
     patch: |
       - op: replace

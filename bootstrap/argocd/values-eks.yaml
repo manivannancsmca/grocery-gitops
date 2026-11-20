@@ -4,11 +4,11 @@
 # - Notifications to Slack / e-mail on sync failures and degraded health.
 # Values marked REPLACE are filled in when the cluster exists (docs/eks.md).
 global:
-  domain: argocd.REPLACE-domain
+  domain: argocd.grocery.example.com
 
 configs:
   cm:
-    url: https://argocd.REPLACE-domain
+    url: https://argocd.grocery.example.com
     admin.enabled: false
     dex.config: |
       connectors:

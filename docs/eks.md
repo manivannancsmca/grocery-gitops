@@ -3,7 +3,7 @@
 The staging and prod environments are already described in this repository:
 `projects/<env>`, `roots/<env>.yaml`, `app-of-apps/<env>`, and `overlays/<env>` of every service and the frontend.
 They are validated on every pull request (`kustomize build` + kubeconform), but no cluster runs them yet. This page
-lists what to do when the clusters exist. Values marked `REPLACE` in the files are filled in at that point.
+lists what to do when the clusters exist. Values marked `REPLACE` (and the placeholder domain `grocery.example.com`) are filled in at that point.
 
 ## Design differences from Kind
 
