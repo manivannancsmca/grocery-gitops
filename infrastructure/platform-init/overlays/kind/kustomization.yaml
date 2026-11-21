@@ -6,6 +6,19 @@ resources:
 # The Jobs read the secrets mysql-root and mysql-users of the mysql Application (infrastructure/mysql/overlays/kind).
 #
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh): the bundle image built from the same commit.
+# Copy the final bundle image into the tracked ConfigMap (base/revision.yaml), so a new bundle re-runs the Jobs.
+# (Here, not in the base: it must run after the images transformer below has set the real reference.)
+replacements:
+  - source:
+      kind: Job
+      name: mysql-init
+      fieldPath: spec.template.spec.initContainers.0.image
+    targets:
+      - select:
+          kind: ConfigMap
+          name: platform-init-revision
+        fieldPaths:
+          - data.bundleImage
 images:
   - name: grocery/platform-init
     newName: ghcr.io/manivannancsmca/grocery-platform-init

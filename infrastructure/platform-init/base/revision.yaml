@@ -1,0 +1,10 @@
+# Why this exists: Argo CD leaves hook resources (the setup Jobs) out of its comparison, so a new bundle image that
+# only changes the Jobs would never make the Application OutOfSync, and automated sync would never run them again.
+# This ConfigMap carries the bundle image reference (copied from the Jobs by the replacement in kustomization.yaml),
+# so every new bundle changes a tracked resource -> the Application syncs -> the Sync-hook Jobs run again.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-init-revision
+data:
+  bundleImage: set-by-kustomize
