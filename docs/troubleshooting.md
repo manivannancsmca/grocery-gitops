@@ -23,6 +23,7 @@ kubectl get events -n grocery --sort-by=.lastTimestamp | Select-Object -Last 20
 | `argocd login` hangs: "gRPC connection not ready" | port missing | `argocd login argocd.localtest.me:80 --grpc-web --plaintext` (the CLI assumes 443) |
 | `helm upgrade` of Argo CD fails: "conflict with argocd-controller" | Argo CD manages itself | change `bootstrap/argocd/values-*.yaml` in Git instead |
 | Changes in Git not picked up for 3 minutes | polling interval | **Refresh** in the UI, or `kubectl annotate application <app> -n argocd argocd.argoproj.io/refresh=normal --overwrite` |
+| A Job hook keeps an old image although Git changed | hooks are not compared, so a hook-only change triggers no sync. platform-init has a revision ConfigMap for this (docs/workflow.md §8); for a one-off, run `argocd app sync platform-init` |
 | Deleted Application, resources still there | intended for infrastructure (no cascade finalizer) | delete the resources deliberately, if that is really wanted |
 
 ## Workloads

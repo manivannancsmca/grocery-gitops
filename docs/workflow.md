@@ -130,6 +130,30 @@ On 2026-11-21 the first image references were committed by hand (commits `516f2e
 *bootstrap*), with exactly the values the CI job writes. This was needed because the `GITOPS_DEPLOY_KEY` secret wasn't
 set yet. Every later update comes from CI.
 
+**First fully automatic run** (2026-11-21):
+
+1. grocery-ai-app CI run 44874740690 (commit `a8308f2`): libraries, 17 services' tests, frontend, security
+   checks and 19 images with their gates.
+2. The CI job committed `dc0d356` *"deploy: 37 image update(s) from a8308f2"* as `github-actions[bot]`.
+3. Argo CD found that commit by polling, with nobody touching it:
+   - all 18 Deployments were on the new images after **264 s**;
+   - all 35 Applications were Synced/Healthy after **464 s**;
+   - there were zero pod restarts.
+
+## 8. Setup Jobs and new bundles
+
+The setup Jobs (`infrastructure/platform-init`) are Argo CD Sync hooks, and Argo CD leaves hooks out of its
+comparison. A commit that changes *only* a hook therefore never makes the Application OutOfSync, so auto-sync never
+re-runs it.
+
+To make a new bundle image re-run the Jobs anyway:
+- the ConfigMap `platform-init-revision` carries the bundle reference;
+- a Kustomize replacement copies that reference from the Jobs.
+
+Every new bundle then changes a tracked resource. Argo CD syncs the Application, and the Jobs run again.
+(Verified: after `ee9fc36` all four Jobs re-ran with the new bundle on their own.) Use the same pattern for any
+other hook whose input changes.
+
 ## 7. Validate the whole chain
 
 ```powershell
