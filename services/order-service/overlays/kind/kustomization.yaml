@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/order-service
     newName: ghcr.io/manivannancsmca/grocery-order-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:c302dc0806ddcd6c63d76a1ebbaec7fec7fff9a8e58489f67ac9fffb03b713bb
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:cf512c3116a2e458bc8d53240b2633e23a40197a8b9aa5a4dec7843fb2c62440

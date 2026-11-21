@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/inventory-service
     newName: ghcr.io/manivannancsmca/grocery-inventory-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:d32b5862ec64e208cfbda299247f8045814777954a8cfc9288e1dd1cdd5d550d
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:94a9e5300deb45818809c1b49157b935082a49e8092ea0d6d8c912c60448ac1c

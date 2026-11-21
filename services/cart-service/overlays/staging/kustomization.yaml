@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/cart-service
     newName: ghcr.io/manivannancsmca/grocery-cart-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:b2fb804a614b8fd023cc21f06c8aba6f5f91a09457d079c786fe33f154832fe8
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:100c5af77c99bfc33e18287bc231b0f9e58ca51aa240e7f27b0569ae3c226364
 patches:
   - target: {kind: Deployment, name: cart-service}
     patch: |

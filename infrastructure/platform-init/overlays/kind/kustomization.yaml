@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/platform-init
     newName: ghcr.io/manivannancsmca/grocery-platform-init
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:dc4f392d6b3060c404abfa1ccdb613bb9958271f54b7b80301894308917d9cdc
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:3fbf2367e6585473053cd27c17fcae8c3be47f3a7c60429e653a3f3dc6e3f848

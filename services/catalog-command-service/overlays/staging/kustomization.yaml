@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/catalog-command-service
     newName: ghcr.io/manivannancsmca/grocery-catalog-command-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:2a63d6ff36525fec172c53b30f9db3c955f4a90c5d374d542dffd1edb5f16245
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:e866b7b404cbc701a045e302d7ae1c9c574ce595755672e37361b476e8b20f9c
 patches:
   - target: {kind: Deployment, name: catalog-command-service}
     patch: |

@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/reporting-service
     newName: ghcr.io/manivannancsmca/grocery-reporting-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:e326bc6ecef339696a3501eb38cfbdceb2280697ebe321128c3a82121f9f52bc
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:e18747a5ebb091507d28296c873e023d4facbfb41a89b57056ef4b2c76168163

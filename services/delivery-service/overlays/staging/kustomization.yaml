@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/delivery-service
     newName: ghcr.io/manivannancsmca/grocery-delivery-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:db28e9ce7d077bd56e744afe7a3504a5a5f2f1b7cf1327244c6e9045fa867033
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:46210562c5f08c492c78d271b876dba5c494d6510ae3d42ce60ab8c33bbc279b
 patches:
   - target: {kind: Deployment, name: delivery-service}
     patch: |

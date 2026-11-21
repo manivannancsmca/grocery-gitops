@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/pricing-service
     newName: ghcr.io/manivannancsmca/grocery-pricing-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:1b740a8466727a5b55feb985a7cab59142520d65ff9cdf50471a2c6f99a87eda
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:1c779f22f4c84b143b7f45ec5171b87f8dd70c1322d93c3d2371554d12ccf4f3
 patches:
   - target: {kind: Deployment, name: pricing-service}
     patch: |

@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/vendor-service
     newName: ghcr.io/manivannancsmca/grocery-vendor-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:bcd6c90b6167120afe284b76578f2421da5e5aba1687a7f22aca9d76b0072a8e
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:ee0d76b5c6e67153224d9a86b3fd5a458fd2743acfce5ec384d83f4bb17aa350

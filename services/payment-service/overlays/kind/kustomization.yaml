@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/payment-service
     newName: ghcr.io/manivannancsmca/grocery-payment-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:2443d5a0de128ed63766e1162314e3c9849b9c3d4506afd796492f6f1b1fdda6
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:243125b9445d32f04fb0258c28baf7231cf09615a7741d93035f09ab403c4fae

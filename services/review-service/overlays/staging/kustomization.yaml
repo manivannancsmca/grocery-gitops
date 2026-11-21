@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/review-service
     newName: ghcr.io/manivannancsmca/grocery-review-service
-    newTag: sha-b100f7412810d1b0104a2ce17e0dd20df7c9cd0d
-    digest: sha256:39cd22f26f9de800e20947a5b8c3ab9b48b39449b445ca325b2c39b4b34d58b7
+    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
+    digest: sha256:cfa9579c48d0dafbc8985f2ab870f134f9e50a56ea91ba4cb43c8a5d688738da
 patches:
   - target: {kind: Deployment, name: review-service}
     patch: |
