@@ -6,6 +6,13 @@ resources:
   - db.sealed.yaml # order-service-db: DB_PASSWORD (bootstrap/scripts/seal-kind-secrets.ps1)
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful build of order-service:
 # the tag names the commit, the digest pins the exact image that was tested and scanned.
+patches:
+  # Rollback drill (docs/rollback.md): a visible configuration change that rolls the pods.
+  - target: { kind: Deployment, name: order-service }
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value: { name: ORDER_PAYMENT_WINDOW, value: 20m }
 images:
   - name: grocery/order-service
     newName: ghcr.io/manivannancsmca/grocery-order-service
