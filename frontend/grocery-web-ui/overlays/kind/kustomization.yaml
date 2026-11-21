@@ -8,7 +8,7 @@ patches:
     patch: |
       - op: replace
         path: /spec/hostnames
-        value: [grocery.localtest.me]
+        value: [grocery.localhost, grocery.localtest.me]
 # Updated by CI (grocery-ai-app .github/scripts/update-gitops.sh) after every successful frontend build.
 images:
   - name: grocery/grocery-web-ui

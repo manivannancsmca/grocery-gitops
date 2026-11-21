@@ -11,6 +11,7 @@ spec:
       namespace: grocery-edge
       sectionName: http
   hostnames:
+    - argocd.localhost
     - argocd.localtest.me
   rules:
     - matches:

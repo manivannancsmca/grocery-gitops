@@ -9,6 +9,7 @@ spec:
       namespace: grocery-edge
       sectionName: http
   hostnames:
+    - mail.localhost
     - mail.localtest.me
   rules:
     - matches:

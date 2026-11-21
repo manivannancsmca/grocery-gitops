@@ -5,9 +5,11 @@ resources:
   - gatewayclass.yaml
   - argocd-route.yaml
 patches:
-  # Every *.localtest.me name resolves to 127.0.0.1, so no hosts-file entries are needed.
+  # No hostname filter: each HTTPRoute lists its names under both local domains, which reach 127.0.0.1 without any
+  # hosts-file entry:
+  #   *.localhost     reserved loopback domain; browsers resolve it themselves (and treat it as a secure context)
+  #   *.localtest.me  public DNS name pointing at 127.0.0.1; works for every CLI (curl, argocd, ...)
   - target: { kind: Gateway, name: public }
     patch: |
-      - op: replace
+      - op: remove
         path: /spec/listeners/0/hostname
-        value: "*.localtest.me"

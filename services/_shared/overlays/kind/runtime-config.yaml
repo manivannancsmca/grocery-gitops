@@ -23,8 +23,8 @@ data:
   KAFKA_CONNECT_URL: http://kafka-connect.grocery-infra.svc.cluster.local:8083   # gateway: admin connector routes
 
   # Application
-  GATEWAY_ALLOWED_ORIGINS: http://grocery.localtest.me
-  APP_BASE_URL: http://grocery.localtest.me                                     # absolute links in e-mails
+  GATEWAY_ALLOWED_ORIGINS: "http://grocery.localhost,http://grocery.localtest.me"   # both local names of the app
+  APP_BASE_URL: http://grocery.localhost                                        # absolute links in e-mails
   APPROVAL_JWKS_URI: http://ai-orchestrator-service:8115/.well-known/approval-jwks.json
   DEV_SEED_ENABLED: "true"         # dev.*@grocery.local accounts on the sign-in page (never in production)
   AI_PROVIDER: scripted            # deterministic assistant without a model (no Ollama on Kind)
