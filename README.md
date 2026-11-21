@@ -127,11 +127,14 @@ ssh-keygen -t ed25519 -N '""' -C argocd-kind -f $HOME\.grocery-gitops\argocd-dep
 .\bootstrap\scripts\seal-kind-secrets.ps1
 ```
 
+Every route answers under two local names that both reach 127.0.0.1 with no hosts-file entry: `*.localhost`
+(browsers resolve it themselves) and `*.localtest.me` (public DNS; use it for CLI tools).
+
 | URL | What |
 |---|---|
-| <http://argocd.localtest.me> | Argo CD. `developer` / `release-manager` passwords are in `%USERPROFILE%\.grocery-gitops\argocd-accounts.txt`; `argocd admin initial-password -n argocd` prints the admin password |
-| <http://grocery.localtest.me> | the FreshCart web app. Sign in with a `dev.*@grocery.local` account from the sign-in page, or as `admin@grocery.local` (password in `kind-secrets.json`) |
-| <http://mail.localtest.me> | Mailpit: every e-mail the platform sends |
+| <http://argocd.localhost> | Argo CD. `developer` / `release-manager` passwords are in `%USERPROFILE%\.grocery-gitops\argocd-accounts.txt`; `argocd admin initial-password -n argocd` prints the admin password |
+| <http://grocery.localhost> | the FreshCart web app. Sign in with a seeded `dev.*@grocery.local` account (password `Dev@12345`, see grocery-ai-app's README), or as `admin@grocery.local` (password in `kind-secrets.json`) |
+| <http://mail.localhost> | Mailpit: every e-mail the platform sends |
 
 Check what is running:
 

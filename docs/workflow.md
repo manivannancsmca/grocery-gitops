@@ -119,11 +119,16 @@ Configuration lives in the GitOps repository too, so the process is the same: a 
 3. In `grocery-ai-app`, set the Actions secret **`GITOPS_DEPLOY_KEY`** to the private half of `ci-gitops-write-key`.
 4. In `grocery-gitops`, enable *Settings → Actions → General → Allow GitHub Actions to create and approve pull
    requests* (for the promote workflow).
-5. After the first image build, make the GHCR packages public (*Package → Settings → Change visibility*), or give
-   the cluster an image pull secret. New GHCR packages are private by default.
+5. Check that the images can be pulled anonymously. Packages that Actions publishes from this *public* repository
+   came out public. If a package is private, make it public (*Package → Settings → Change visibility*) or give the
+   cluster an image pull secret.
 6. Run `bootstrap/scripts/bootstrap-kind.ps1`, then `bootstrap/scripts/seal-kind-secrets.ps1`.
 7. Run the CI workflow once with **build_all** (*Actions → CI → Run workflow*). Once the images exist, enable
    `infra/platform-init.yaml`, `services/*` and `frontend/*` in `app-of-apps/kind/kustomization.yaml`.
+
+On 2026-11-21 the first image references were committed by hand (commits `516f2e5` and `f4e01da`, labelled
+*bootstrap*), with exactly the values the CI job writes. This was needed because the `GITOPS_DEPLOY_KEY` secret wasn't
+set yet. Every later update comes from CI.
 
 ## 7. Validate the whole chain
 
@@ -132,10 +137,10 @@ Configuration lives in the GitOps repository too, so the process is the same: a 
 kubectl get applications -n argocd
 argocd app list                                   # after: argocd login argocd.localtest.me:80 --grpc-web --plaintext
 
-# the app
+# the app (browsers: *.localhost; CLIs: *.localtest.me - both reach the same routes)
 curl.exe -s http://grocery.localtest.me/api/health/gateway       # gateway health through Envoy + nginx
-start http://grocery.localtest.me                                 # sign in with a dev.*@grocery.local account
-start http://mail.localtest.me                                    # e-mails sent by notification-service
+start http://grocery.localhost                                    # sign in, e.g. dev.customer@grocery.local / Dev@12345
+start http://mail.localhost                                       # e-mails sent by notification-service
 
 # what runs where, and which image
 kubectl get deploy -n grocery -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image

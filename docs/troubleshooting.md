@@ -47,6 +47,8 @@ kubectl get events -n grocery --sort-by=.lastTimestamp | Select-Object -Last 20
 | Symptom | Fix |
 |---|---|
 | `http://grocery.localtest.me` does not answer | `docker ps` (the `grocery-worker` container publishes 127.0.0.1:80); `kubectl get gateway -n grocery-edge` must be Programmed; `kubectl get svc -n envoy-gateway-system` must show NodePort 30080 |
+| A browser refuses `*.localtest.me` (e.g. "blocked by client") | use `*.localhost` (`grocery.localhost`, `argocd.localhost`, `mail.localhost`): same routes, resolved by the browser itself |
+| Sign-in fails with 403 on a new host name | the gateway's CORS list: add the origin to `GATEWAY_ALLOWED_ORIGINS` in `services/_shared/overlays/kind/runtime-config.yaml`, then restart `api-gateway` |
 | `*.localtest.me` slow at first | it resolves to `::1` (IPv6) and to 127.0.0.1; Kind listens on IPv4 only, so clients fall back after a moment. `curl.exe -4` avoids it. |
 | Port 80 already in use | stop the other program, or change `hostPort` in `bootstrap/kind/cluster.yaml` and recreate the cluster |
 | Everything slow, pods evicted | Docker memory: the full platform needs about 13 GiB. Stop the Compose stack (`docker compose -p grocery stop`) and raise WSL memory (`%USERPROFILE%\.wslconfig`, `memory=20GB`) |
@@ -58,7 +60,8 @@ kubectl get events -n grocery --sort-by=.lastTimestamp | Select-Object -Last 20
 |---|---|
 | "Secrets in the git history (gitleaks)" fails | open the job log. A real secret must be removed from history and rotated. A reviewed false positive goes into `.gitleaksignore` (fingerprint) or `.gitleaks.toml` |
 | Trivy gate fails | upgrade the dependency or base image; accept only with an expiry date in `infrastructure/ci/docker/.trivyignore` |
-| "Update the GitOps repository" fails: permission denied (publickey) | the `GITOPS_DEPLOY_KEY` secret is missing, or its public key is not a write deploy key on `grocery-gitops` |
+| "Require the GitOps deploy key" fails | the `GITOPS_DEPLOY_KEY` secret is missing in `grocery-ai-app`; add the private half of `ci-gitops-write-key`, then **Re-run failed jobs** (the run's images are reused) |
+| "Update the GitOps repository" fails: permission denied (publickey) / 403 | its public key is not a *write* deploy key on `grocery-gitops` |
 | GitOps push rejected repeatedly | another writer keeps pushing; the job retries 5 times with rebase. Rerun the job |
 | Service tests fail only on the runner | Testcontainers needs Docker (Ubuntu runners have it); look at the uploaded `test-reports-<service>` artifact |
 | No images built after a docs-only change | intended: `paths-ignore` skips CI for Markdown and docs |

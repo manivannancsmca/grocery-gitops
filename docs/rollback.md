@@ -37,27 +37,32 @@ through a new pull request.
 
 Argo CD keeps the last 10 synced revisions of every Application (`revisionHistoryLimit: 10`).
 
+With App of Apps, the root Application (`grocery-kind`) self-heals the child Application specs. Pausing a child's
+auto-sync on its own is undone within seconds, so **pause the root first**. Only `admin` can do that, because the
+root belongs to the platform project. This is an emergency, admin-level procedure by design.
+
 ```powershell
-argocd login argocd.localtest.me:80 --grpc-web --plaintext --username release-manager
-argocd app history order-service             # ID, date, Git revision
-# Auto-sync would immediately re-apply Git's version, so pause it for this Application first:
-argocd app set order-service --sync-policy none
-argocd app rollback order-service <ID>
+argocd login argocd.localtest.me:80 --grpc-web --plaintext --username admin
+argocd app history order-service                     # ID, date, Git revision
+argocd app set grocery-kind  --sync-policy none      # 1. stop the root from restoring the child's spec
+argocd app set order-service --sync-policy none      # 2. stop auto-sync from re-applying Git's version
+argocd app rollback order-service <ID>               # 3. roll back to a recorded revision
 argocd app wait order-service --health
 ```
 
-Then **fix Git** (option A) and turn automated sync back on:
+Then **fix Git** (option A: revert) and give the root its automation back. The root then restores every child's
+automated sync, and the child syncs to the reverted Git state, which is what is already running:
 
 ```powershell
-argocd app set order-service --sync-policy automated --self-heal --auto-prune
+kubectl -n argocd patch application grocery-kind --type merge -p '{\"spec\":{\"syncPolicy\":{\"automated\":{\"prune\":false,\"selfHeal\":true}}}}'
+# (or: kubectl apply -f roots/kind.yaml)
 ```
 
-While auto-sync is off, the Application shows *OutOfSync*. The root Application (`grocery-kind`) re-enables
-automated sync on its next self-heal. To keep it off during a longer investigation, change the child Application in
-Git, or pause the root for that time with `argocd app set grocery-kind --sync-policy none`.
+While auto-sync is off, the Application shows *OutOfSync*; that is expected.
 
-Roles: `release-manager` may roll back (the `update` permission on `grocery-apps-*`); `developer` may not, and nobody
-but `admin` may roll back platform Applications.
+Roles: `release-manager` may sync, roll back (option A, or `argocd app rollback` while the root is paused) and run
+actions on `grocery-apps-*`. `developer` may not roll back. Only `admin` may pause the root or touch platform
+Applications.
 
 ## Option C: Kubernetes rollout undo (never in GitOps)
 
@@ -73,6 +78,12 @@ work, and it shouldn't. Use A or B.
 - **Infrastructure data**: the infrastructure Applications never prune and their volumes are retained, so reverting
   an infrastructure change never deletes data. Restoring data is a separate procedure (database backups).
 
-## Rollback drill (recorded on Kind, 2026-11-21)
+## Rollback drill (run on Kind, 2026-11-21)
 
-See the "Rollback drill" section of the README for the commands and timings of the drill run while setting this up.
+| Step | What happened | Time |
+|---|---|---|
+| Deploy | commit `88e642a` adds `ORDER_PAYMENT_WINDOW=20m` to order-service; Argo CD syncs, the new pod is ready before the old one stops | 26 s from push to rolled out |
+| B: Argo CD rollback | admin pauses `grocery-kind` and `order-service`, `argocd app rollback order-service 0` (revision `516f2e5`) | 31 s to Healthy, env var gone, app *OutOfSync* (Git still has the change) |
+| A: Git revert | `git revert 88e642a` → `185b917`, root automation restored | 38 s to *Synced/Healthy*; no extra rollout, the cluster already matched Git |
+
+History of `order-service` afterwards: `0 516f2e5` → `1 88e642a` → `2 516f2e5` (the rollback); Git `185b917`.
