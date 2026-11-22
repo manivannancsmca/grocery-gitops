@@ -11,8 +11,8 @@ resources:
 images:
   - name: grocery/ai-orchestrator-service
     newName: ghcr.io/manivannancsmca/grocery-ai-orchestrator-service
-    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
-    digest: sha256:b0b7ac4e39f9cf956b5d9f78f0d0f0d6e96e496de3c882bd48c341ae8e8434ec
+    newTag: sha-27077466d8a329ac6c9510991853b43432ae33bd
+    digest: sha256:0d55789a874dc140e5fef926a356cd6bdf733f8bb682aa70f4ed2dec2406ea44
 patches:
   - target: {kind: Deployment, name: ai-orchestrator-service}
     patch: |
