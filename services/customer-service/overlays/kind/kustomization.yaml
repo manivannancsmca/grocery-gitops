@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/customer-service
     newName: ghcr.io/manivannancsmca/grocery-customer-service
-    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
-    digest: sha256:8db3c1df8791ef372af204823600ba530b70da240d11a0d43c28a0eb8c58d1e1
+    newTag: sha-253e4aa724ee0e08c1a55f902e6991b6d2489c6a
+    digest: sha256:1ad8adc7bb705393b878987930f3e9bdbdad6b0afb1fddb0283090bc10681372

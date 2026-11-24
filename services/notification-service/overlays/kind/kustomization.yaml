@@ -9,5 +9,5 @@ resources:
 images:
   - name: grocery/notification-service
     newName: ghcr.io/manivannancsmca/grocery-notification-service
-    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
-    digest: sha256:6b759a4c0db8666199ba67a4e2ce43bc55ef631a50a88df208669fee0ff002c0
+    newTag: sha-253e4aa724ee0e08c1a55f902e6991b6d2489c6a
+    digest: sha256:c754a66a9a3388a67d966fe30539680df69dd120e202de75bee7d1b920d54627

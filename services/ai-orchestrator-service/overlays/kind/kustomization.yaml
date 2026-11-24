@@ -9,8 +9,8 @@ resources:
 images:
   - name: grocery/ai-orchestrator-service
     newName: ghcr.io/manivannancsmca/grocery-ai-orchestrator-service
-    newTag: sha-27077466d8a329ac6c9510991853b43432ae33bd
-    digest: sha256:0d55789a874dc140e5fef926a356cd6bdf733f8bb682aa70f4ed2dec2406ea44
+    newTag: sha-253e4aa724ee0e08c1a55f902e6991b6d2489c6a
+    digest: sha256:c1e5d3f1a6368b7d4619419f47d4eefa67da0868f3b33cd30df7be953dc9c069
 patches:
   # Spring AI + reactor-netty need more than the default 384Mi.
   - target: {kind: Deployment, name: ai-orchestrator-service}

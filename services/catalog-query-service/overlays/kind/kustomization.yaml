@@ -8,5 +8,5 @@ resources:
 images:
   - name: grocery/catalog-query-service
     newName: ghcr.io/manivannancsmca/grocery-catalog-query-service
-    newTag: sha-27077466d8a329ac6c9510991853b43432ae33bd
-    digest: sha256:e3b7f8f6b569c04878cd0a49ab0e6c507aec9bd85b44bc16b0c86440be5e1d98
+    newTag: sha-253e4aa724ee0e08c1a55f902e6991b6d2489c6a
+    digest: sha256:dd6e7a69edaf54352834be41baa55f4055ac951164b3a18dd2061ad2a8fa013b
