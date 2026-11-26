@@ -8,5 +8,5 @@ resources:
 images:
   - name: grocery/api-gateway
     newName: ghcr.io/manivannancsmca/grocery-api-gateway
-    newTag: sha-a8308f2047870c1974d9ef7a36f76033d831d74c
-    digest: sha256:fe6c945a81a9a9700f5e42ec3523325aac7963665b0430817fb536ef550ddd41
+    newTag: sha-95d6edf57d816409276bac589abd0cbc24f328fe
+    digest: sha256:effa881e744a05f93a4b0688c3a0ae232668707ac98fd432a0ac46ea49f6a476

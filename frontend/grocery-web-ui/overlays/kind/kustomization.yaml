@@ -13,5 +13,5 @@ patches:
 images:
   - name: grocery/grocery-web-ui
     newName: ghcr.io/manivannancsmca/grocery-web-ui
-    newTag: sha-addf7e9c10d150a08f87dbdc208935dae516ca2b
-    digest: sha256:f8503ef405d7abf12d2cc596e7fb2599045dab71e1fb6c9a1b76ea512e871d03
+    newTag: sha-95d6edf57d816409276bac589abd0cbc24f328fe
+    digest: sha256:bc60f2923ce4245ff91afe4c85bf4c8eba02d1e47933bdd4396ddb4fb521a42e
